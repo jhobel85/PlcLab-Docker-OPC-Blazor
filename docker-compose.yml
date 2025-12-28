@@ -1,0 +1,12 @@
+
+version: "3.9"
+services:
+  web:
+    build: ./src/PlcLab.Web
+    ports: ["8080:8080"]
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - OpcUa__Endpoint=opc.tcp://localhost:4840
+  # opcua-refserver:
+  #   image: ghcr.io/opcfoundation/ua-reference-server:latest
+  #   ports: ["4840:4840"]

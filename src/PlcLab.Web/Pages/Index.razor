@@ -1,0 +1,16 @@
+
+@page "/"
+@using PlcLab.OPC
+@inject OpcUaClientFactory UaFactory
+
+<h4>Welcome to PlcLab</h4>
+<p>OPC UA only — Siemens‑free demo scaffold.</p>
+
+@code {
+  protected override async Task OnInitializedAsync()
+  {
+    var endpoint = (string)(this.Context?.Services.GetService<IConfiguration>()?["OpcUa:Endpoint"] ?? "opc.tcp://localhost:4840");
+    try { var (cfg, session) = await UaFactory.ConnectAsync(endpoint); session.Close(); }
+    catch { }
+  }
+}

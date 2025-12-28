@@ -1,0 +1,14 @@
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PlcLab.OPC\PlcLab.OPC.csproj" />
+    <ProjectReference Include="..\PlcLab.Domain\PlcLab.Domain.csproj" />
+    <ProjectReference Include="..\PlcLab.Application\PlcLab.Application.csproj" />
+    <ProjectReference Include="..\PlcLab.Infrastructure\PlcLab.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
