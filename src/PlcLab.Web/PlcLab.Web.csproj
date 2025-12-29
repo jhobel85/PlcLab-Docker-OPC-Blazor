@@ -4,11 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-  <ItemGroup>    
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.*" PrivateAssets="all" />
-
+  <ItemGroup>        
     <ProjectReference Include="..\PlcLab.OPC\PlcLab.OPC.csproj" />
     <ProjectReference Include="..\PlcLab.Domain\PlcLab.Domain.csproj" />
     <ProjectReference Include="..\PlcLab.Application\PlcLab.Application.csproj" />

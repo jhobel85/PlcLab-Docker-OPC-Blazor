@@ -1,6 +1,3 @@
-# Secrets locall
-.env
-
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -21,9 +18,6 @@ bld/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
 
 # NuGet Packages
 *.nupkg
@@ -46,3 +40,30 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Dependencies
+packages/
+.dotnet/
+
+# Certificates
+*.pfx
+*.pem
+*.crt
+*.key
+certs/
+
+# Environment
+.env
+.env.local
+appsettings.local.json

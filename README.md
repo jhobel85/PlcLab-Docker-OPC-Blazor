@@ -12,14 +12,14 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 ---
 
 ## 1) Repository & Projects
-- [ ] Create solution `PlcLab-Docker-OPC-Blazor` with projects:
-  - [ ] `PlcLab.Web` (Blazor Web App; SSR + interactive)
-  - [ ] `PlcLab.OPC` (OPC UA client utils; connect/browse/subscribe/methods)
-  - [ ] `PlcLab.Domain` (entities, value objects, domain events)
-  - [ ] `PlcLab.Application` (CQRS + test runner)
-  - [ ] `PlcLab.Infrastructure` (EF Core, Serilog, OpenTelemetry)
-- [ ] Add `.editorconfig`, `.gitattributes`, `.gitignore`
-- [ ] Use **Directory.Packages.props** to pin package versions (OPC UA only)
+- [x] Create solution `PlcLab-Docker-OPC-Blazor` with projects:
+  - [x] `PlcLab.Web` (Blazor Web App; SSR + interactive)
+  - [x] `PlcLab.OPC` (OPC UA client utils; connect/browse/subscribe/methods)
+  - [x] `PlcLab.Domain` (entities, value objects, domain events)
+  - [x] `PlcLab.Application` (CQRS + test runner)
+  - [x] `PlcLab.Infrastructure` (EF Core, Serilog, OpenTelemetry)
+- [x] Add `.editorconfig`, `.gitattributes`, `.gitignore`
+- [x] Use **Directory.Packages.props** to pin package versions (OPC UA only)
 
 ## 2) Virtual PLC (OPC UA Reference Server) via Docker
 - [ ] Add `opcua-refserver` service to `docker-compose.yml` (port 4840)
