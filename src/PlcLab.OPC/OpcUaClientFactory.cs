@@ -11,14 +11,18 @@ namespace PlcLab.OPC
   /// <param name="telemetry"></param>
   public class OpcUaClientFactory(ITelemetryContext telemetry) : IOpcUaClientFactory
   {
-        private readonly ITelemetryContext _telemetry = telemetry;
+    private const string APP_NAME = "PlcLabClient";
 
-        public async Task<Session> CreateSessionAsync(string discoveryUrl, bool useSecurity = true, CancellationToken ct = default)
+    private readonly ITelemetryContext _telemetry = telemetry;
+
+    public string GetApplicationName() => APP_NAME;
+
+    public async Task<Session> CreateSessionAsync(string discoveryUrl, bool useSecurity = true, CancellationToken ct = default)
     {
       // 1) Build application configuration
       var config = new ApplicationConfiguration
       {
-        ApplicationName = "PlcLabClient",
+        ApplicationName = APP_NAME,
         ApplicationType = ApplicationType.Client,
         SecurityConfiguration = new SecurityConfiguration
         {
@@ -27,7 +31,7 @@ namespace PlcLab.OPC
           {
             StoreType = "X509Store",
             StorePath = "CurrentUser\\My",
-            SubjectName = "CN=PlcLabClient"
+            SubjectName = "CN="+APP_NAME
           }
         },
         TransportQuotas = new TransportQuotas { OperationTimeout = 15000 },
@@ -63,7 +67,7 @@ namespace PlcLab.OPC
           configured,
           updateBeforeConnect: false,
           checkDomain: true,
-          sessionName: "PlcLabSession",
+          sessionName: APP_NAME + "Session",
           sessionTimeout: 60_000u,
           identity: new UserIdentity(new AnonymousIdentityToken()),
           preferredLocales: ["en-US", "cs-CZ"],
