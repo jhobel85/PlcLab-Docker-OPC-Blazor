@@ -18,5 +18,5 @@ dotnet restore
 
 5. Run the app:
    ```bash
-   dotnet run -p src/PlcLab.Web
+   dotnet run --project src/PlcLab.Web
    ```
