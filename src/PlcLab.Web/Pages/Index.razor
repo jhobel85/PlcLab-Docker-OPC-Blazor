@@ -1,7 +1,7 @@
 
 @page "/"
 @using PlcLab.OPC
-@inject OpcUaClientFactory UaFactory
+@inject IOpcUaClientFactory UaFactory
 @inject IConfiguration Configuration
 
 <h4>Welcome to PlcLab</h4>
@@ -11,7 +11,7 @@
   protected override async Task OnInitializedAsync()
   {
     var endpoint = Configuration["OpcUa:Endpoint"] ?? "opc.tcp://localhost:4840";
-    try { await UaFactory.ConnectAsync(endpoint); }
+    try { await UaFactory.CreateSessionAsync(endpoint); }
     catch { }
   }
 }

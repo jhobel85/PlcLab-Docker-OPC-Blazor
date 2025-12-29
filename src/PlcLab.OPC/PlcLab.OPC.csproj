@@ -7,10 +7,13 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua"/>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core"/>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration"/>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client"/>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates"/>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Sinks.Console" />
   </ItemGroup>
 </Project>
