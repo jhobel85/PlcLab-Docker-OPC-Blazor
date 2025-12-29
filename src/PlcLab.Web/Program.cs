@@ -1,5 +1,7 @@
 
 using PlcLab.OPC;
+using PlcLab.Web;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddSingleton<OpcUaClientFactory>();

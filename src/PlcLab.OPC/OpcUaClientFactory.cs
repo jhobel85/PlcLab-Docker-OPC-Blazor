@@ -1,5 +1,8 @@
 
-using Opc.Ua; using Opc.Ua.Client; using Opc.Ua.Configuration;
+using Opc.Ua; 
+using Opc.Ua.Client; 
+using Opc.Ua.Configuration;
+
 namespace PlcLab.OPC
 {
   public class OpcUaClientFactory
@@ -14,7 +17,7 @@ namespace PlcLab.OPC
         {
           ApplicationCertificate = new CertificateIdentifier
           {
-            StoreType = "X509Store", StorePath = "CurrentUser\My", SubjectName = $"CN={appName}"
+            StoreType = "X509Store", StorePath = "admin" + Path.DirectorySeparatorChar + "certs", SubjectName = $"CN={appName}"
           },
           AutoAcceptUntrustedCertificates = false,
         },
