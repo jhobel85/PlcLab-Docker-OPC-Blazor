@@ -66,7 +66,7 @@ namespace PlcLab.OPC
         // Use async DiscoveryClient with telemetry
         var discoveryClient = await DiscoveryClient.CreateAsync(config, new Uri(discoveryUrl), DiagnosticsMasks.None, ct);
         var endpoints = await discoveryClient.GetEndpointsAsync(null, ct);
-        await discoveryClient.CloseAsync();
+        await discoveryClient.CloseAsync(ct);
 
         // Log available endpoints for debugging
         Console.WriteLine($"Found {endpoints.Count} endpoints:");
