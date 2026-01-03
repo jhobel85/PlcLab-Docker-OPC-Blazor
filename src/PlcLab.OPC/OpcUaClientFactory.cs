@@ -63,26 +63,26 @@ namespace PlcLab.OPC
       
       if (!useSecurity)
       {
-        // When security is disabled, manually select None/None endpoint to avoid certificate issues
-        var discoveryClient = DiscoveryClient.Create(new Uri(discoveryUrl), endpointConfiguration);
+        // Use async DiscoveryClient with telemetry
+        var discoveryClient = await DiscoveryClient.CreateAsync(config, new Uri(discoveryUrl), DiagnosticsMasks.None, ct);
         var endpoints = await discoveryClient.GetEndpointsAsync(null, ct);
-        discoveryClient.Close();
-        
+        await discoveryClient.CloseAsync();
+
         // Log available endpoints for debugging
         Console.WriteLine($"Found {endpoints.Count} endpoints:");
         foreach (var ep in endpoints)
         {
           Console.WriteLine($"  - SecurityMode: {ep.SecurityMode}, SecurityPolicy: {ep.SecurityPolicyUri}");
         }
-        
-        endpoint = endpoints.FirstOrDefault(e => 
-            e.SecurityMode == MessageSecurityMode.None && 
-            (e.SecurityPolicyUri == SecurityPolicies.None || 
+
+        endpoint = endpoints.FirstOrDefault(e =>
+            e.SecurityMode == MessageSecurityMode.None &&
+            (e.SecurityPolicyUri == SecurityPolicies.None ||
              e.SecurityPolicyUri == "http://opcfoundation.org/UA/SecurityPolicy#None" ||
              string.IsNullOrEmpty(e.SecurityPolicyUri)))
-          ?? throw new ServiceResultException(StatusCodes.BadSecurityPolicyRejected, 
+          ?? throw new ServiceResultException(StatusCodes.BadSecurityPolicyRejected,
               $"Server does not support unsecured endpoint. Available: {string.Join(", ", endpoints.Select(e => $"{e.SecurityMode}/{e.SecurityPolicyUri}"))}");
-        
+
         // Fix endpoint URL - replace container hostname with correct hostname for the environment
         if (endpoint.EndpointUrl.Contains("opc.tcp://") && !endpoint.EndpointUrl.Contains("opcua-refserver") && !endpoint.EndpointUrl.Contains("localhost"))
         {
@@ -104,12 +104,15 @@ namespace PlcLab.OPC
       }
       else
       {
-        endpoint = CoreClientUtils.SelectEndpoint(
+        var selectedEndpoint = await CoreClientUtils.SelectEndpointAsync(
             config,
             discoveryUrl,
             useSecurity,
-            15000
-        );
+            15000,
+            _telemetry,
+            ct
+        ) ?? throw new ServiceResultException(StatusCodes.BadConfigurationError, "No suitable endpoint found.");
+                endpoint = selectedEndpoint;
       }
       
       var configured = new ConfiguredEndpoint(null, endpoint, endpointConfiguration);
