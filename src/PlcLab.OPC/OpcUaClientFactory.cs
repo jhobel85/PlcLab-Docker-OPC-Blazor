@@ -83,12 +83,12 @@ namespace PlcLab.OPC
           ?? throw new ServiceResultException(StatusCodes.BadSecurityPolicyRejected, 
               $"Server does not support unsecured endpoint. Available: {string.Join(", ", endpoints.Select(e => $"{e.SecurityMode}/{e.SecurityPolicyUri}"))}");
         
-        // Fix endpoint URL - replace container hostname with opcua-refserver
-        // Keep the port from the discovery URL (4840 for local, 50000 for Docker)
-        if (endpoint.EndpointUrl.Contains("opc.tcp://") && !endpoint.EndpointUrl.Contains("opcua-refserver"))
+        // Fix endpoint URL - replace container hostname with correct hostname for the environment
+        if (endpoint.EndpointUrl.Contains("opc.tcp://") && !endpoint.EndpointUrl.Contains("opcua-refserver") && !endpoint.EndpointUrl.Contains("localhost"))
         {
           var discoveryUri = new Uri(discoveryUrl);
-          var newUrl = $"opc.tcp://opcua-refserver:{discoveryUri.Port}{new Uri(endpoint.EndpointUrl).PathAndQuery}";
+          string hostname = discoveryUrl.Contains("localhost") ? "localhost" : "opcua-refserver";
+          var newUrl = $"opc.tcp://{hostname}:{discoveryUri.Port}{new Uri(endpoint.EndpointUrl).PathAndQuery}";
           endpoint = new EndpointDescription
           {
             EndpointUrl = newUrl,
