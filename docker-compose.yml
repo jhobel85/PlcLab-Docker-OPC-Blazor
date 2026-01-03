@@ -7,6 +7,15 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - OpcUa__Endpoint=opc.tcp://localhost:4840
-  # opcua-refserver:
-  #   image: ghcr.io/opcfoundation/ua-reference-server:latest
-  #   ports: ["4840:4840"]
+  opcua-refserver:
+    image: ghcr.io/opcfoundation/ua-reference-server:latest
+    ports:
+      - "4840:4840"
+    restart: unless-stopped
+    environment:
+      - OPCUA_SERVER_PORT=4840
+    healthcheck:
+      test: ["CMD", "/app/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

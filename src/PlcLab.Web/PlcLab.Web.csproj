@@ -11,5 +11,6 @@
     <ProjectReference Include="..\PlcLab.Domain\PlcLab.Domain.csproj" />
     <ProjectReference Include="..\PlcLab.Application\PlcLab.Application.csproj" />
     <ProjectReference Include="..\PlcLab.Infrastructure\PlcLab.Infrastructure.csproj" />
+    <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 </Project>

@@ -22,10 +22,10 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Use **Directory.Packages.props** to pin package versions (OPC UA only)
 
 ## 2) Virtual PLC (OPC UA Reference Server) via Docker
-- [ ] Add `opcua-refserver` service to `docker-compose.yml` (port 4840)
-- [ ] Configure `OpcUa:Endpoint=opc.tcp://opcua-refserver:4840` in `appsettings.json`
-- [ ] Document trust list/certificate steps for the client
-- [ ] Create a hosted service in `PlcLab.Infrastructure` that seeds demo data on startup (guard with config flag `Seed:Enabled`). Seed demo nodes/methods:
+- [x] Add `opcua-refserver` service to `docker-compose.yml` (port 4840)
+- [x] Configure `OpcUa:Endpoint=opc.tcp://opcua-refserver:4840` in `appsettings.json`
+- [x] Document trust list/certificate steps for the client
+- [x] Create a hosted service in `PlcLab.Infrastructure` that seeds demo data on startup (guard with config flag `Seed:Enabled`). Seed demo nodes/methods:
   - [ ] Variables: `Process/State`, `Analog/Flow`, `Digital/ValveOpen`
   - [ ] Methods: `StartSequenceTest`, `ResetAlarms`
 
