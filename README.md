@@ -27,7 +27,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Document trust list/certificate steps for the client
 - [x] Create a hosted service in `PlcLab.Infrastructure` that seeds demo data on startup (guard with config flag `Seed:Enabled`). Seed demo nodes/methods:
   - [x] Variables: `Process/State`, `Analog/Flow`, `Digital/ValveOpen`
-  - [x] Methods: `StartSequenceTest`, `ResetAlarms`
+  - [ ] Methods: `StartSequenceTest`, `ResetAlarms` -> NOT available in current used opc-server (mcr.microsoft.com/iotedge/opc-plc:latest)    
 
 ## 3) OPC UA Client (PlcLab.OPC)
 - [x] Implement `OpcUaClientFactory.ConnectAsync` (cert management, secure policies)

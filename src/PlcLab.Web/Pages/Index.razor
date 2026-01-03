@@ -16,16 +16,74 @@
   <button class="btn btn-secondary" @onclick="TestButtonClick">Test Button</button>
 </div>
 
+@if (_seedInfo != null && _seedInfo.seedEnabled)
+{
+  <div class="alert alert-info mt-3">
+    <strong>Seed Data (Demo Variables):</strong>
+    @if (_seedInfo.variables?.Count > 0)
+    {
+      <ul>
+        @foreach (var v in _seedInfo.variables)
+        {
+          <li><b>@v.Label</b> (<code>@v.Path</code>): <span>@v.Value</span></li>
+        }
+      </ul>
+    }
+    else
+    {
+      <span>No demo variables found or OPC UA server not reachable.</span>
+    }
+  </div>
+}
+
 @code {
+
   private string _opcStatus = "Not connected";
   private bool _isConnecting;
   private Session? _session;
   private int _clickCount = 0;
 
+  private SeedInfo? _seedInfo;
+
+
   protected override async Task OnInitializedAsync()
   {
     Console.WriteLine("Component initialized - OnInitializedAsync called");
     await TryConnectAsync();
+    await LoadSeedInfoAsync();
+  }
+
+  private async Task LoadSeedInfoAsync()
+  {
+    try
+    {
+      var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
+      var resp = await http.GetAsync("api/seedinfo");
+      if (resp.IsSuccessStatusCode)
+      {
+        var json = await resp.Content.ReadAsStringAsync();
+        _seedInfo = System.Text.Json.JsonSerializer.Deserialize<SeedInfo>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+      }
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"Failed to load seed info: {ex.Message}");
+    }
+    StateHasChanged();
+  }
+
+  [Inject] NavigationManager NavigationManager { get; set; } = default!;
+
+  public class SeedInfo
+  {
+    public bool seedEnabled { get; set; }
+    public List<SeedVariable> variables { get; set; } = new();
+  }
+  public class SeedVariable
+  {
+    public string Label { get; set; } = string.Empty;
+    public string Path { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
   }
 
   private async Task ReconnectAsync()

@@ -20,6 +20,8 @@ builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
 // Register demo data seeder hosted service
 builder.Services.AddHostedService<PlcLab.Infrastructure.DemoDataSeederHostedService>();
 var app = builder.Build();
+// Register API endpoint for seed info
+app.MapSeedInfoEndpoint();
 app.UseHttpsRedirection();
 //app.UseAuthentication();
 //app.UseAuthorization();

@@ -6,6 +6,7 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - OpcUa__Endpoint=opc.tcp://opcua-refserver:50000
+      - Seed__Enabled=true
     depends_on:
       opcua-refserver:
         condition: service_started

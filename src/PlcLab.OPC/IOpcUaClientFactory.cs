@@ -18,7 +18,7 @@ namespace PlcLab.OPC
         Task AddMonitoredItemAsync(Subscription subscription, NodeId nodeId, Action<MonitoredItem, MonitoredItemNotificationEventArgs> callback, CancellationToken ct = default);
 
         // Read/Write
-        Task<Variant> ReadValueAsync(Session session, NodeId nodeId, CancellationToken ct = default);
+        Task<object> ReadValueAsync(Session session, NodeId nodeId, CancellationToken ct = default);
         Task WriteValueAsync(Session session, NodeId nodeId, Variant value, CancellationToken ct = default);
 
         // Methods

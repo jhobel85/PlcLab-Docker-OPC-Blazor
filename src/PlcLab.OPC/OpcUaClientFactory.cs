@@ -220,7 +220,7 @@ namespace PlcLab.OPC
     }
 
     // Read/Write
-    public async Task<Variant> ReadValueAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+    public async Task<object> ReadValueAsync(Session session, NodeId nodeId, CancellationToken ct = default)
     {
       var readValueId = new ReadValueId
       {
@@ -232,7 +232,8 @@ namespace PlcLab.OPC
       if (StatusCode.IsBad(readResponse.Results[0].StatusCode))
         throw new ServiceResultException(readResponse.Results[0].StatusCode);
 
-      return (Variant)readResponse.Results[0].Value;
+      // Return the value as object, not as Variant
+      return readResponse.Results[0].Value;
     }
 
     public async Task WriteValueAsync(Session session, NodeId nodeId, Variant value, CancellationToken ct = default)
