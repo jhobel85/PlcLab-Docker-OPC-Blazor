@@ -19,7 +19,6 @@ namespace PlcLab.OPC
 
     public async Task<Session> CreateSessionAsync(string discoveryUrl, bool useSecurity = true, CancellationToken ct = default)
     {
-      // 1) Build application configuration
       var config = new ApplicationConfiguration
       {
         ApplicationName = APP_NAME,
@@ -29,9 +28,24 @@ namespace PlcLab.OPC
           AutoAcceptUntrustedCertificates = true,
           ApplicationCertificate = new CertificateIdentifier
           {
-            StoreType = "X509Store",
-            StorePath = "CurrentUser\\My",
+            StoreType = "Directory",
+            StorePath = "/app/pki",
             SubjectName = "CN="+APP_NAME
+          },
+          TrustedIssuerCertificates = new CertificateTrustList
+          {
+            StoreType = "Directory",
+            StorePath = "/app/pki/trusted"
+          },
+          TrustedPeerCertificates = new CertificateTrustList
+          {
+            StoreType = "Directory",
+            StorePath = "/app/pki/trusted"
+          },
+          RejectedCertificateStore = new CertificateTrustList
+          {
+            StoreType = "Directory",
+            StorePath = "/app/pki/rejected"
           }
         },
         TransportQuotas = new TransportQuotas { OperationTimeout = 15000 },
@@ -41,20 +55,64 @@ namespace PlcLab.OPC
       // 2) Validate configuration (async, recommended)
       await config.ValidateAsync(ApplicationType.Client, ct).ConfigureAwait(false);
 
-      // 3) Discover endpoints and select one manually (avoids deprecated CoreClientUtils overloads)
-      using var discoveryClient = await DiscoveryClient.CreateAsync(config, new Uri(discoveryUrl), ct: ct);
-      var sc = new StringCollection { discoveryUrl };
-      var endpoints = await discoveryClient.GetEndpointsAsync(sc, ct).ConfigureAwait(false);
-      if (endpoints == null || endpoints.Count == 0)
-        throw new ServiceResultException(StatusCodes.BadNoData, "No endpoints returned by server.");
+      // 3) Discover and select endpoint from the server
+      var endpointConfiguration = EndpointConfiguration.Create(config);
+      endpointConfiguration.OperationTimeout = 15000;
 
-      EndpointDescription selected = useSecurity
-              ? endpoints.OrderByDescending(e => e.SecurityLevel).First()
-          : endpoints.FirstOrDefault(e => e.SecurityPolicyUri == SecurityPolicies.None)
-            ?? endpoints.OrderBy(e => e.SecurityLevel).First();
-
-      // 4) Wrap into ConfiguredEndpoint
-      var configured = new ConfiguredEndpoint(null, selected);
+      EndpointDescription endpoint;
+      
+      if (!useSecurity)
+      {
+        // When security is disabled, manually select None/None endpoint to avoid certificate issues
+        var discoveryClient = DiscoveryClient.Create(new Uri(discoveryUrl), endpointConfiguration);
+        var endpoints = await discoveryClient.GetEndpointsAsync(null, ct);
+        discoveryClient.Close();
+        
+        // Log available endpoints for debugging
+        Console.WriteLine($"Found {endpoints.Count} endpoints:");
+        foreach (var ep in endpoints)
+        {
+          Console.WriteLine($"  - SecurityMode: {ep.SecurityMode}, SecurityPolicy: {ep.SecurityPolicyUri}");
+        }
+        
+        endpoint = endpoints.FirstOrDefault(e => 
+            e.SecurityMode == MessageSecurityMode.None && 
+            (e.SecurityPolicyUri == SecurityPolicies.None || 
+             e.SecurityPolicyUri == "http://opcfoundation.org/UA/SecurityPolicy#None" ||
+             string.IsNullOrEmpty(e.SecurityPolicyUri)))
+          ?? throw new ServiceResultException(StatusCodes.BadSecurityPolicyRejected, 
+              $"Server does not support unsecured endpoint. Available: {string.Join(", ", endpoints.Select(e => $"{e.SecurityMode}/{e.SecurityPolicyUri}"))}");
+        
+        // Fix endpoint URL - replace container hostname with opcua-refserver
+        // Keep the port from the discovery URL (4840 for local, 50000 for Docker)
+        if (endpoint.EndpointUrl.Contains("opc.tcp://") && !endpoint.EndpointUrl.Contains("opcua-refserver"))
+        {
+          var discoveryUri = new Uri(discoveryUrl);
+          var newUrl = $"opc.tcp://opcua-refserver:{discoveryUri.Port}{new Uri(endpoint.EndpointUrl).PathAndQuery}";
+          endpoint = new EndpointDescription
+          {
+            EndpointUrl = newUrl,
+            SecurityMode = endpoint.SecurityMode,
+            SecurityPolicyUri = endpoint.SecurityPolicyUri,
+            TransportProfileUri = endpoint.TransportProfileUri,
+            SecurityLevel = endpoint.SecurityLevel,
+            ServerCertificate = endpoint.ServerCertificate,
+            Server = endpoint.Server,
+            UserIdentityTokens = endpoint.UserIdentityTokens
+          };
+        }
+      }
+      else
+      {
+        endpoint = CoreClientUtils.SelectEndpoint(
+            config,
+            discoveryUrl,
+            useSecurity,
+            15000
+        );
+      }
+      
+      var configured = new ConfiguredEndpoint(null, endpoint, endpointConfiguration);
 
       // 5) Identity + locales (newer overloads accept IList<string>)
       var identity = new UserIdentity(new AnonymousIdentityToken());
@@ -66,7 +124,7 @@ namespace PlcLab.OPC
           config,
           configured,
           updateBeforeConnect: false,
-          checkDomain: true,
+          checkDomain: useSecurity,  // Only check domain when using security
           sessionName: APP_NAME + "Session",
           sessionTimeout: 60_000u,
           identity: new UserIdentity(new AnonymousIdentityToken()),
@@ -86,6 +144,126 @@ namespace PlcLab.OPC
       };
 
       return (Session)session;
+    }
+
+    // Browsing
+    public async Task<NodeId> ResolveNodeIdAsync(Session session, string path, CancellationToken ct = default)
+    {
+      var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+      var currentId = ObjectIds.RootFolder;
+
+      foreach (var part in parts)
+      {
+        var browseResult = await BrowseAsync(session, currentId, ct);
+        var reference = browseResult.FirstOrDefault(r => r.DisplayName.Text == part);
+        if (reference == null)
+          throw new ServiceResultException(StatusCodes.BadNodeIdUnknown, $"Node '{part}' not found in path '{path}'");
+        currentId = ExpandedNodeId.ToNodeId(reference.NodeId, session.NamespaceUris);
+      }
+
+      return currentId;
+    }
+
+    public async Task<ReferenceDescriptionCollection> BrowseAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+    {
+      var browseDescription = new BrowseDescription
+      {
+        NodeId = nodeId,
+        BrowseDirection = BrowseDirection.Forward,
+        ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
+        IncludeSubtypes = true,
+        NodeClassMask = (uint)NodeClass.Object | (uint)NodeClass.Variable | (uint)NodeClass.Method,
+        ResultMask = (uint)BrowseResultMask.All
+      };
+
+      var browseResponse = await session.BrowseAsync(null, null, 0, new BrowseDescriptionCollection { browseDescription }, ct);
+      if (StatusCode.IsBad(browseResponse.Results[0].StatusCode))
+        throw new ServiceResultException(browseResponse.Results[0].StatusCode);
+
+      return browseResponse.Results[0].References;
+    }
+
+    // Subscriptions
+    public async Task<Subscription> CreateSubscriptionAsync(Session session, CancellationToken ct = default)
+    {
+      var subscription = new Subscription(session.DefaultSubscription)
+      {
+        PublishingInterval = 1000,
+        KeepAliveCount = 10,
+        LifetimeCount = 100,
+        MaxNotificationsPerPublish = 1000,
+        PublishingEnabled = true,
+        TimestampsToReturn = TimestampsToReturn.Both
+      };
+
+      session.AddSubscription(subscription);
+      await subscription.CreateAsync(ct);
+      return subscription;
+    }
+
+    public async Task AddMonitoredItemAsync(Subscription subscription, NodeId nodeId, Action<MonitoredItem, MonitoredItemNotificationEventArgs> callback, CancellationToken ct = default)
+    {
+      var monitoredItem = new MonitoredItem(subscription.DefaultItem)
+      {
+        StartNodeId = nodeId,
+        AttributeId = Attributes.Value,
+        MonitoringMode = MonitoringMode.Reporting,
+        SamplingInterval = 1000,
+        QueueSize = 0,
+        DiscardOldest = true
+      };
+
+      monitoredItem.Notification += new MonitoredItemNotificationEventHandler(callback);
+
+      subscription.AddItem(monitoredItem);
+      await subscription.ApplyChangesAsync(ct);
+    }
+
+    // Read/Write
+    public async Task<Variant> ReadValueAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+    {
+      var readValueId = new ReadValueId
+      {
+        NodeId = nodeId,
+        AttributeId = Attributes.Value
+      };
+
+      var readResponse = await session.ReadAsync(null, 0, TimestampsToReturn.Neither, new ReadValueIdCollection { readValueId }, ct);
+      if (StatusCode.IsBad(readResponse.Results[0].StatusCode))
+        throw new ServiceResultException(readResponse.Results[0].StatusCode);
+
+      return (Variant)readResponse.Results[0].Value;
+    }
+
+    public async Task WriteValueAsync(Session session, NodeId nodeId, Variant value, CancellationToken ct = default)
+    {
+      var writeValue = new WriteValue
+      {
+        NodeId = nodeId,
+        AttributeId = Attributes.Value,
+        Value = new DataValue { Value = value }
+      };
+
+      var writeResponse = await session.WriteAsync(null, new WriteValueCollection { writeValue }, ct);
+      if (StatusCode.IsBad(writeResponse.Results[0]))
+        throw new ServiceResultException(writeResponse.Results[0]);
+    }
+
+    // Methods
+    public async Task<Variant[]> CallMethodAsync(Session session, NodeId objectId, NodeId methodId, Variant[] inputArgs, CancellationToken ct = default)
+    {
+      var callMethodRequest = new CallMethodRequest
+      {
+        ObjectId = objectId,
+        MethodId = methodId,
+        InputArguments = new VariantCollection(inputArgs)
+      };
+
+      var callResponse = await session.CallAsync(null, new CallMethodRequestCollection { callMethodRequest }, ct);
+      if (StatusCode.IsBad(callResponse.Results[0].StatusCode))
+        throw new ServiceResultException(callResponse.Results[0].StatusCode);
+
+      return callResponse.Results[0].OutputArguments.ToArray();
     }
   }
 }

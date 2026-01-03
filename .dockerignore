@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/out/
+**/.vs/
+**/.vscode/
+**/node_modules/
+**/.git/
+**/.gitignore
+**/README.md

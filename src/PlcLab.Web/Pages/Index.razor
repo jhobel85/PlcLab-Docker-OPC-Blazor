@@ -1,17 +1,99 @@
 
 @page "/"
+@rendermode @(new InteractiveServerRenderMode())
 @using PlcLab.OPC
+@using Opc.Ua.Client
+@using Microsoft.AspNetCore.Components.Web
 @inject IOpcUaClientFactory UaFactory
 @inject IConfiguration Configuration
 
 <h4>Welcome to PlcLab</h4>
-<p>OPC UA application: @UaFactory.GetApplicationName()</p>
+<div>
+  <p>OPC UA application: @UaFactory.GetApplicationName()</p>
+  <p><strong>Status:</strong> @_opcStatus @if (_session != null) { <span>(Session: @_session.SessionId)</span> }</p>
+  <p><strong>Click Count:</strong> @_clickCount (test to verify component is interactive)</p>
+  <button class="btn btn-primary" @onclick="ReconnectAsync" disabled="@_isConnecting">Reconnect</button>
+  <button class="btn btn-secondary" @onclick="TestButtonClick">Test Button</button>
+</div>
 
 @code {
+  private string _opcStatus = "Not connected";
+  private bool _isConnecting;
+  private Session? _session;
+  private int _clickCount = 0;
+
   protected override async Task OnInitializedAsync()
   {
+    Console.WriteLine("Component initialized - OnInitializedAsync called");
+    await TryConnectAsync();
+  }
+
+  private async Task ReconnectAsync()
+  {
+    await TryConnectAsync();
+  }
+
+  private void TestButtonClick()
+  {
+    Console.WriteLine("TestButtonClick method called!");
+    _clickCount++;
+    Console.WriteLine($"Test button clicked. Count: {_clickCount}");
+    StateHasChanged();
+  }
+
+  private async Task TryConnectAsync()
+  {
     var endpoint = Configuration["OpcUa:Endpoint"] ?? "opc.tcp://localhost:4840";
-    try { await UaFactory.CreateSessionAsync(endpoint); }
-    catch { }
+
+    _isConnecting = true;
+    _opcStatus = $"Connecting to {endpoint}...";
+    StateHasChanged();
+
+    try
+    {
+      // Close existing session if present
+      if (_session != null)
+      {
+        var oldSessionId = _session.SessionId?.ToString() ?? "(unknown)";
+        Console.WriteLine($"[Reconnect] Closing old session: {oldSessionId}");
+        
+        try
+        {
+          await _session.CloseAsync();
+          Console.WriteLine($"[Reconnect] Old session closed successfully");
+        }
+        catch (Exception closeEx)
+        {
+          Console.WriteLine($"[Reconnect] Error closing old session: {closeEx.Message}");
+        }
+        finally
+        {
+          _session.Dispose();
+          _session = null;
+        }
+      }
+
+      // Wait a bit for server to fully release the old session before creating a new one
+      // This ensures the new session gets a fresh session ID
+      Console.WriteLine("[Reconnect] Waiting 1000ms before creating new session");
+      await Task.Delay(1000);
+
+      Console.WriteLine("[Reconnect] Creating new session");
+      _session = await UaFactory.CreateSessionAsync(endpoint, useSecurity: false);
+      var sessionId = _session?.SessionId?.ToString() ?? "(unknown)";
+      Console.WriteLine($"[Reconnect] New session created with ID: {sessionId}");
+      _opcStatus = $"Connected (SessionId: {sessionId})";
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"[Reconnect] Exception: {ex.Message}");
+      Console.WriteLine($"[Reconnect] StackTrace: {ex.StackTrace}");
+      _opcStatus = $"Connection failed: {ex.Message}";
+    }
+    finally
+    {
+      _isConnecting = false;
+      StateHasChanged();
+    }
   }
 }

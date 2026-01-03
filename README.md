@@ -26,15 +26,15 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Configure `OpcUa:Endpoint=opc.tcp://opcua-refserver:4840` in `appsettings.json`
 - [x] Document trust list/certificate steps for the client
 - [x] Create a hosted service in `PlcLab.Infrastructure` that seeds demo data on startup (guard with config flag `Seed:Enabled`). Seed demo nodes/methods:
-  - [ ] Variables: `Process/State`, `Analog/Flow`, `Digital/ValveOpen`
-  - [ ] Methods: `StartSequenceTest`, `ResetAlarms`
+  - [x] Variables: `Process/State`, `Analog/Flow`, `Digital/ValveOpen`
+  - [x] Methods: `StartSequenceTest`, `ResetAlarms`
 
 ## 3) OPC UA Client (PlcLab.OPC)
-- [ ] Implement `OpcUaClientFactory.ConnectAsync` (cert management, secure policies)
-- [ ] Browsing helpers: path → `NodeId`, recursive tree build
-- [ ] Subscriptions: create/update/dispose; callbacks for values
-- [ ] Read/Write helpers: scalars, arrays, variants
-- [ ] Method invocation: objectId + methodId + input arguments; result parsing
+- [x] Implement `OpcUaClientFactory.ConnectAsync` (cert management, secure policies)
+- [x] Browsing helpers: path → `NodeId`, recursive tree build
+- [x] Subscriptions: create/update/dispose; callbacks for values
+- [x] Read/Write helpers: scalars, arrays, variants
+- [x] Method invocation: objectId + methodId + input arguments; result parsing
 
 ## 4) Domain & Application
 - [ ] Define entities: `TestPlan`, `TestCase`, `TestRun`, `TestResult`, `SignalSnapshot`
