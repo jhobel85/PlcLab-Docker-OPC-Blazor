@@ -1,4 +1,5 @@
-
+using PlcLab.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Opc.Ua;
 using Opc.Ua.Client;
 using PlcLab.OPC;
@@ -6,6 +7,9 @@ using PlcLab.Web;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+// Add SQL Server DbContext
+builder.Services.AddDbContext<PlcLabDbContext>(options =>
+	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Host.UseSerilog(); // Use Serilog for logging
 builder.Services.AddAntiforgery();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();

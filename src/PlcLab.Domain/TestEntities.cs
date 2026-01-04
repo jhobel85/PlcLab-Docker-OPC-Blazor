@@ -38,6 +38,6 @@ public class SignalSnapshot
 {
     public Guid Id { get; set; }
     public string SignalName { get; set; } = string.Empty;
-    public object? Value { get; set; }
+    public string? Value { get; set; }
     public DateTime Timestamp { get; set; }
 }

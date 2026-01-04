@@ -50,7 +50,7 @@ public class TestRunOrchestrator
                 {
                     Id = Guid.NewGuid(),
                     SignalName = signal.SignalName,
-                    Value = value,
+                    Value = value?.ToString(),
                     Timestamp = DateTime.UtcNow
                 });
             }

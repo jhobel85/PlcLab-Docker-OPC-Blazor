@@ -43,8 +43,8 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Validation rules (limits, timeouts, required signals)
 
 ## 5) Persistence & Observability
-- [ ] Choose DB (PostgreSQL or SQL Server) — **optional** for demo
-- [ ] EF Core DbContext + migrations
+- [x] Choose DB (PostgreSQL or SQL Server) — **optional** for demo
+- [x] EF Core DbContext + migrations
 - [ ] Serilog: console + rolling file
 - [ ] OpenTelemetry: traces for connect/read/write/method
 
