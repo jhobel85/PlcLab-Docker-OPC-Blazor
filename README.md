@@ -42,13 +42,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [ ] Orchestrate test runs (connect, execute cases, capture results, teardown)
 - [ ] Validation rules (limits, timeouts, required signals)
 
-## 5) Persistence & Observability
-- [ ] Choose DB (PostgreSQL or SQL Server) — **optional** for demo
-- [ ] EF Core DbContext + migrations
-- [ ] Serilog: console + rolling file
-- [ ] OpenTelemetry: traces for connect/read/write/method
-
-## 6) Blazor UI
+## 5) Blazor UI
 - [ ] **Endpoint Switcher** (Virtual PLC / In‑process mock)
 - [ ] **OPC UA Browser** (tree view, node details, read/write)
 - [ ] **Live Signals** (subscriptions with list/chart)
@@ -56,26 +50,26 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [ ] **Results Explorer** (filters, table, details, CSV/PDF export)
 - [ ] Theme: basic CSS or MudBlazor (if allowed)
 
-## 7) Security (Certificates)
+## 6) Security (Certificates)
 - [ ] Client certificate store + trust list management UI
 - [ ] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
 - [ ] README section on certificate workflow (generate, trust, revoke)
 
-## 8) In‑Process Mock OPC UA Server (optional)
+## 7) In‑Process Mock OPC UA Server (optional)
 - [ ] .NET worker hosting a minimal OPC UA server
 - [ ] Define variables & two demo methods
 - [ ] Deterministic value generator (for repeatable tests)
 
-## 9) CI/CD
+## 8) CI/CD
 - [ ] GitHub Actions: restore/build/test + code coverage
 - [ ] Spin up **Docker OPC UA reference server** for integration tests
 - [ ] Publish `PlcLab.Web` as container image
 
-## 10) Integration Tests
+## 9) Integration Tests
 - [ ] Connect → browse → read/write → subscribe → method call
 - [ ] Stable pass/fail scenarios for automated validation
 
-## 11) Documentation
+## 10) Documentation
 - [ ] README: overview, architecture diagram, screenshots/GIFs
 - [ ] Quickstart for virtual PLC in Docker; endpoint configuration
 - [ ] Security notes (certs, TLS, trust lists)
