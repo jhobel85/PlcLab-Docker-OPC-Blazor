@@ -37,12 +37,18 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Method invocation: objectId + methodId + input arguments; result parsing
 
 ## 4) Domain & Application
-- [ ] Define entities: `TestPlan`, `TestCase`, `TestRun`, `TestResult`, `SignalSnapshot`
-- [ ] Domain events: `TestCaseStarted`, `TestCasePassed`, `TestCaseFailed`
-- [ ] Orchestrate test runs (connect, execute cases, capture results, teardown)
-- [ ] Validation rules (limits, timeouts, required signals)
+- [x] Define entities: `TestPlan`, `TestCase`, `TestRun`, `TestResult`, `SignalSnapshot`
+- [x] Domain events: `TestCaseStarted`, `TestCasePassed`, `TestCaseFailed`
+- [x] Orchestrate test runs (connect, execute cases, capture results, teardown)
+- [x] Validation rules (limits, timeouts, required signals)
 
-## 5) Blazor UI
+## 5) Persistence & Observability
+- [ ] Choose DB (PostgreSQL or SQL Server) — **optional** for demo
+- [ ] EF Core DbContext + migrations
+- [ ] Serilog: console + rolling file
+- [ ] OpenTelemetry: traces for connect/read/write/method
+
+## 6) Blazor UI
 - [ ] **Endpoint Switcher** (Virtual PLC / In‑process mock)
 - [ ] **OPC UA Browser** (tree view, node details, read/write)
 - [ ] **Live Signals** (subscriptions with list/chart)
@@ -50,26 +56,26 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [ ] **Results Explorer** (filters, table, details, CSV/PDF export)
 - [ ] Theme: basic CSS or MudBlazor (if allowed)
 
-## 6) Security (Certificates)
+## 7) Security (Certificates)
 - [ ] Client certificate store + trust list management UI
 - [ ] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
 - [ ] README section on certificate workflow (generate, trust, revoke)
 
-## 7) In‑Process Mock OPC UA Server (optional)
+## 8) In‑Process Mock OPC UA Server (optional)
 - [ ] .NET worker hosting a minimal OPC UA server
 - [ ] Define variables & two demo methods
 - [ ] Deterministic value generator (for repeatable tests)
 
-## 8) CI/CD
+## 9) CI/CD
 - [ ] GitHub Actions: restore/build/test + code coverage
 - [ ] Spin up **Docker OPC UA reference server** for integration tests
 - [ ] Publish `PlcLab.Web` as container image
 
-## 9) Integration Tests
+## 10) Integration Tests
 - [ ] Connect → browse → read/write → subscribe → method call
 - [ ] Stable pass/fail scenarios for automated validation
 
-## 10) Documentation
+## 11) Documentation
 - [ ] README: overview, architecture diagram, screenshots/GIFs
 - [ ] Quickstart for virtual PLC in Docker; endpoint configuration
 - [ ] Security notes (certs, TLS, trust lists)
