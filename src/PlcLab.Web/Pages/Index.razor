@@ -2,32 +2,48 @@
 @page "/"
 @rendermode @(new InteractiveServerRenderMode())
 @using PlcLab.OPC
+@using PlcLab.Web.Pages
 @using PlcLab.Web.Models
-@using Opc.Ua.Client
+@using PlcLab.Infrastructure
 @using Microsoft.AspNetCore.Components.Web
 @inject IOpcUaClientFactory UaFactory
 @inject IConfiguration Configuration
+@inject DemoDataSeederHostedService AddService
+@inject NavigationManager NavigationManager
 
-@inject PlcLab.Infrastructure.DemoDataSeederHostedService AddService
+@code {
+    private IndexViewModel _vm;
+
+    public Index(IndexViewModel vm)
+    {
+        _vm = vm;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+    _vm = new IndexViewModel(UaFactory, Configuration, AddService, NavigationManager);
+    await _vm.InitializeAsync();
+    StateHasChanged();
+  }
+}
 
 <h4>Welcome to PlcLab</h4>
 <div>
   <p>OPC UA application: @UaFactory.GetApplicationName()</p>
-  <p><strong>Status:</strong> @_opcStatus @if (_session != null) { <span>(Session: @_session.SessionId)</span> }</p>
-  <p><strong>Click Count:</strong> @_clickCount (test to verify component is interactive)</p>
-  <button class="btn btn-primary" @onclick="ReconnectAsync" disabled="@_isConnecting">Reconnect</button>
-  <button class="btn btn-secondary" @onclick="TestButtonClick">Test Button</button>
+  <p><strong>Status:</strong> @_vm.OpcStatus @if (_vm.Session != null) { <span>(Session: @_vm.Session.SessionId)</span> }</p>
+  <p><strong>Click Count:</strong> @_vm.ClickCount (test to verify component is interactive)</p>
+  <button class="btn btn-primary" @onclick="_vm.ReconnectAsync" disabled="@_vm.IsConnecting">Reconnect</button>
+  <button class="btn btn-secondary" @onclick="_vm.TestButtonClick">Test Button</button>
 </div>
 
-
-@if (_seedInfo != null && _seedInfo.SeedEnabled)
+@if (_vm.SeedInfo != null && _vm.SeedInfo.SeedEnabled)
 {
   <div class="alert alert-info mt-3">
     <strong>Seed Data (Demo Variables):</strong>
-    @if (_seedInfo.Variables?.Count > 0)
+    @if (_vm.SeedInfo.Variables?.Count > 0)
     {
       <ul>
-        @foreach (var v in _seedInfo.Variables)
+        @foreach (var v in _vm.SeedInfo.Variables)
         {
           <li><b>@v.Label</b> (<code>@v.Path</code>): <span>@v.Value</span></li>
         }
@@ -42,149 +58,17 @@
   <div class="alert alert-secondary mt-3">
     <strong>Demo Methods:</strong>
     <div class="input-group mb-2 mt-2">
-      <input type="number" class="form-control" placeholder="Number 1" @bind="_addNum1" />
-      <input type="number" class="form-control" placeholder="Number 2" @bind="_addNum2" />
-      <button class="btn btn-success" @onclick="CallAddMethodAsync" disabled="@(_session == null)">Add</button>
+      <input type="number" class="form-control" placeholder="Number 1" @bind="_vm.AddNum1" />
+      <input type="number" class="form-control" placeholder="Number 2" @bind="_vm.AddNum2" />
+      <button class="btn btn-success" @onclick="_vm.CallAddMethodAsync" disabled="@(_vm.Session == null)">Add</button>
     </div>
-    @if (_addResult != null)
+    @if (_vm.AddResult != null)
     {
-      <div class="alert alert-success">Add Result: <strong>@_addResult</strong></div>
+      <div class="alert alert-success">Add Result: <strong>@_vm.AddResult</strong></div>
     }
-    @if (!string.IsNullOrEmpty(_addError))
+    @if (!string.IsNullOrEmpty(_vm.AddError))
     {
-      <div class="alert alert-danger">Error: @_addError</div>
+      <div class="alert alert-danger">Error: @_vm.AddError</div>
     }
   </div>
-}
-
-
-
-@code {
-
-  private string _opcStatus = "Not connected";
-  private bool _isConnecting;
-  private Session? _session;
-  private int _clickCount = 0;
-
-  private SeedInfo? _seedInfo;
-
-    private float _addNum1;
-    private uint _addNum2;
-    private double? _addResult;
-    private string _addError = string.Empty;
-
-
-  protected override async Task OnInitializedAsync()
-  {
-    Console.WriteLine("Component initialized - OnInitializedAsync called");
-    await TryConnectAsync();
-    await LoadSeedInfoAsync();
-  }
-
-    private async Task CallAddMethodAsync()
-    {
-        _addResult = null;
-        _addError = string.Empty;
-        try
-        {
-          _addResult = await AddService.CallAddMethodAsync(_session, _addNum1, _addNum2);
-          if (_addResult == null)
-            _addError = "No result returned.";
-        }
-        catch (Exception ex)
-        {
-          _addError = ex.Message;
-        }
-        StateHasChanged();
-    }
-
-  private async Task LoadSeedInfoAsync()
-  {
-    try
-    {
-      var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
-      var resp = await http.GetAsync("api/seedinfo");
-      if (resp.IsSuccessStatusCode)
-      {
-        var json = await resp.Content.ReadAsStringAsync();
-        _seedInfo = System.Text.Json.JsonSerializer.Deserialize<SeedInfo>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-      }
-    }
-    catch (Exception ex)
-    {
-      Console.WriteLine($"Failed to load seed info: {ex.Message}");
-    }
-    StateHasChanged();
-  }
-
-  [Inject] NavigationManager NavigationManager { get; set; } = default!;
-
-  private async Task ReconnectAsync()
-  {
-    await TryConnectAsync();
-  }
-
-  private void TestButtonClick()
-  {
-    Console.WriteLine("TestButtonClick method called!");
-    _clickCount++;
-    Console.WriteLine($"Test button clicked. Count: {_clickCount}");
-    StateHasChanged();
-  }
-
-  private async Task TryConnectAsync()
-  {
-    var endpoint = Configuration["OpcUa:Endpoint"] ?? "opc.tcp://localhost:4840";
-
-    _isConnecting = true;
-    _opcStatus = $"Connecting to {endpoint}...";
-    StateHasChanged();
-
-    try
-    {
-      // Close existing session if present
-      if (_session != null)
-      {
-        var oldSessionId = _session.SessionId?.ToString() ?? "(unknown)";
-        Console.WriteLine($"[Reconnect] Closing old session: {oldSessionId}");
-        
-        try
-        {
-          await _session.CloseAsync();
-          Console.WriteLine($"[Reconnect] Old session closed successfully");
-        }
-        catch (Exception closeEx)
-        {
-          Console.WriteLine($"[Reconnect] Error closing old session: {closeEx.Message}");
-        }
-        finally
-        {
-          _session.Dispose();
-          _session = null;
-        }
-      }
-
-      // Wait a bit for server to fully release the old session before creating a new one
-      // This ensures the new session gets a fresh session ID
-      Console.WriteLine("[Reconnect] Waiting 1000ms before creating new session");
-      await Task.Delay(1000);
-
-      Console.WriteLine("[Reconnect] Creating new session");
-      _session = await UaFactory.CreateSessionAsync(endpoint, useSecurity: false);
-      var sessionId = _session?.SessionId?.ToString() ?? "(unknown)";
-      Console.WriteLine($"[Reconnect] New session created with ID: {sessionId}");
-      _opcStatus = $"Connected (SessionId: {sessionId})";
-    }
-    catch (Exception ex)
-    {
-      Console.WriteLine($"[Reconnect] Exception: {ex.Message}");
-      Console.WriteLine($"[Reconnect] StackTrace: {ex.StackTrace}");
-      _opcStatus = $"Connection failed: {ex.Message}";
-    }
-    finally
-    {
-      _isConnecting = false;
-      StateHasChanged();
-    }
-  }
 }
