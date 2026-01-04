@@ -5,9 +5,10 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using PlcLab.OPC;
 using Opc.Ua;
+using Opc.Ua.Client;
 
 namespace PlcLab.Infrastructure
-{
+{  
     public class DemoDataSeederHostedService(IConfiguration configuration, IOpcUaClientFactory opcFactory) : IHostedService
     {
         private readonly IConfiguration _configuration = configuration;
@@ -131,5 +132,62 @@ namespace PlcLab.Infrastructure
         }
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public async Task<double?> CallAddMethodAsync(Session? session, float num1, uint num2)
+        {
+            if (session == null)
+                throw new InvalidOperationException("Not connected to OPC UA server.");
+
+            // Browse path: Objects → ReferenceTest → Methods → Add
+            var path = new[] { "ReferenceTest", "Methods", "Add" };
+            var currentId = ObjectIds.ObjectsFolder;
+            foreach (var part in path)
+            {
+                var children = await _opcFactory.BrowseAsync(session, currentId);
+                var match = children.FirstOrDefault(r => r.DisplayName.Text == part);
+                if (match == null)
+                    throw new Exception($"Node '{part}' not found in path.");
+                currentId = ExpandedNodeId.ToNodeId(match.NodeId, session.NamespaceUris);
+            }
+            var methodId = currentId;
+            // The objectId is the parent node (Methods)
+            var objectId = await GetParentNodeIdAsync(session, methodId);
+
+            // Serilog debug output
+            Log.Debug("Calling Add method:");
+            Log.Debug("  objectId: {ObjectId}", objectId);
+            Log.Debug("  methodId: {MethodId}", methodId);
+            Log.Debug("  num1: {Num1} (type: {Num1Type})", num1, num1.GetType());
+            Log.Debug("  num2: {Num2} (type: {Num2Type})", num2, num2.GetType());
+
+            var inputArgs = new Variant[] { new Variant(num1), new Variant(num2) };
+            Log.Debug("  inputArgs: [{InputArgs}]", string.Join(", ", inputArgs.Select(a => $"{a.Value} ({a.Value?.GetType()})")));
+
+            // Call the method using the factory and handle output
+            try
+            {
+                var output = await _opcFactory.CallMethodAsync(session, objectId, methodId, inputArgs);
+                if (output != null && output.Length > 0)
+                {
+                    Log.Debug("  output: {Output} (type: {OutputType})", output[0].Value, output[0].Value?.GetType());
+                    return Convert.ToDouble(output[0].Value);
+                }
+                Log.Debug("  output: null or empty");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error calling Add method: {Message}", ex.Message);
+                throw;
+            }
+        }
+
+        // Helper to get parent node of a given node by browsing inverse references
+        private async Task<NodeId> GetParentNodeIdAsync(Opc.Ua.Client.Session session, NodeId nodeId)
+        {
+            var refs = await session.FetchReferencesAsync(nodeId).ConfigureAwait(false);
+            var parentRef = refs.FirstOrDefault(r => r.ReferenceTypeId == ReferenceTypeIds.HasComponent && r.IsForward == false) ?? throw new Exception("Parent node not found for method node.");
+            return ExpandedNodeId.ToNodeId(parentRef.NodeId, session.NamespaceUris);
+        }
     }
 }

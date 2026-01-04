@@ -13,7 +13,7 @@ public sealed class SerilogTelemetry : TelemetryContextBase
     {
         // 1) Configure Serilog
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
+            .MinimumLevel.Debug()
             .Enrich.FromLogContext()
             .WriteTo.Console()            // add more sinks as needed
             .CreateLogger();

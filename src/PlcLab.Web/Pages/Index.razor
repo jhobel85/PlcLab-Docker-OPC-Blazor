@@ -2,10 +2,13 @@
 @page "/"
 @rendermode @(new InteractiveServerRenderMode())
 @using PlcLab.OPC
+@using PlcLab.Web.Models
 @using Opc.Ua.Client
 @using Microsoft.AspNetCore.Components.Web
 @inject IOpcUaClientFactory UaFactory
 @inject IConfiguration Configuration
+
+@inject PlcLab.Infrastructure.DemoDataSeederHostedService AddService
 
 <h4>Welcome to PlcLab</h4>
 <div>
@@ -16,14 +19,15 @@
   <button class="btn btn-secondary" @onclick="TestButtonClick">Test Button</button>
 </div>
 
-@if (_seedInfo != null && _seedInfo.seedEnabled)
+
+@if (_seedInfo != null && _seedInfo.SeedEnabled)
 {
   <div class="alert alert-info mt-3">
     <strong>Seed Data (Demo Variables):</strong>
-    @if (_seedInfo.variables?.Count > 0)
+    @if (_seedInfo.Variables?.Count > 0)
     {
       <ul>
-        @foreach (var v in _seedInfo.variables)
+        @foreach (var v in _seedInfo.Variables)
         {
           <li><b>@v.Label</b> (<code>@v.Path</code>): <span>@v.Value</span></li>
         }
@@ -34,7 +38,26 @@
       <span>No demo variables found or OPC UA server not reachable.</span>
     }
   </div>
+
+  <div class="alert alert-secondary mt-3">
+    <strong>Demo Methods:</strong>
+    <div class="input-group mb-2 mt-2">
+      <input type="number" class="form-control" placeholder="Number 1" @bind="_addNum1" />
+      <input type="number" class="form-control" placeholder="Number 2" @bind="_addNum2" />
+      <button class="btn btn-success" @onclick="CallAddMethodAsync" disabled="@(_session == null)">Add</button>
+    </div>
+    @if (_addResult != null)
+    {
+      <div class="alert alert-success">Add Result: <strong>@_addResult</strong></div>
+    }
+    @if (!string.IsNullOrEmpty(_addError))
+    {
+      <div class="alert alert-danger">Error: @_addError</div>
+    }
+  </div>
 }
+
+
 
 @code {
 
@@ -45,6 +68,11 @@
 
   private SeedInfo? _seedInfo;
 
+    private float _addNum1;
+    private uint _addNum2;
+    private double? _addResult;
+    private string _addError = string.Empty;
+
 
   protected override async Task OnInitializedAsync()
   {
@@ -52,6 +80,23 @@
     await TryConnectAsync();
     await LoadSeedInfoAsync();
   }
+
+    private async Task CallAddMethodAsync()
+    {
+        _addResult = null;
+        _addError = string.Empty;
+        try
+        {
+          _addResult = await AddService.CallAddMethodAsync(_session, _addNum1, _addNum2);
+          if (_addResult == null)
+            _addError = "No result returned.";
+        }
+        catch (Exception ex)
+        {
+          _addError = ex.Message;
+        }
+        StateHasChanged();
+    }
 
   private async Task LoadSeedInfoAsync()
   {
@@ -73,18 +118,6 @@
   }
 
   [Inject] NavigationManager NavigationManager { get; set; } = default!;
-
-  public class SeedInfo
-  {
-    public bool seedEnabled { get; set; }
-    public List<SeedVariable> variables { get; set; } = new();
-  }
-  public class SeedVariable
-  {
-    public string Label { get; set; } = string.Empty;
-    public string Path { get; set; } = string.Empty;
-    public string Value { get; set; } = string.Empty;
-  }
 
   private async Task ReconnectAsync()
   {

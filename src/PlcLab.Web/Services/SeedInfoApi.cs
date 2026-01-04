@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
 using PlcLab.OPC;
 
-namespace PlcLab.Web;
+namespace PlcLab.Web.Services;
 
 public static class SeedInfoApi
 {
@@ -52,7 +52,7 @@ public static class SeedInfoApi
                         }
                         if (currentId != null)
                         {
-                            object value = null;
+                            object? value = null;
                             try
                             {
                                 value = await opcFactory.ReadValueAsync(session, currentId);

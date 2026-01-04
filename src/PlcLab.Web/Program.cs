@@ -4,12 +4,6 @@ using Opc.Ua.Client;
 using PlcLab.OPC;
 using PlcLab.Web;
 using Serilog;
-using Serilog.Extensions.Logging;
-
-// Configure Serilog
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog(); // Use Serilog for logging
@@ -17,11 +11,12 @@ builder.Services.AddAntiforgery();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
 builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
-// Register demo data seeder hosted service
-builder.Services.AddHostedService<PlcLab.Infrastructure.DemoDataSeederHostedService>();
+// Register demo data seeder hosted service and as injectable singleton
+builder.Services.AddSingleton<PlcLab.Infrastructure.DemoDataSeederHostedService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.DemoDataSeederHostedService>());
 var app = builder.Build();
 // Register API endpoint for seed info
-app.MapSeedInfoEndpoint();
+PlcLab.Web.Services.SeedInfoApi.MapSeedInfoEndpoint(app);
 app.UseHttpsRedirection();
 //app.UseAuthentication();
 //app.UseAuthorization();
