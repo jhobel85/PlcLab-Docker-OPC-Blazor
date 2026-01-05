@@ -45,8 +45,8 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 ## 5) Persistence & Observability
 - [x] Choose DB (PostgreSQL or SQL Server) — **optional** for demo
 - [x] EF Core DbContext + migrations
-- [ ] Serilog: console + rolling file
-- [ ] OpenTelemetry: traces for connect/read/write/method
+- [x] Serilog: console + rolling file
+- [x] OpenTelemetry: traces for connect/read/write/method
 
 ## 6) Blazor UI
 - [ ] **Endpoint Switcher** (Virtual PLC / In‑process mock)

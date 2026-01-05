@@ -3,11 +3,13 @@ using Opc.Ua.Client;
 using PlcLab.OPC;
 using PlcLab.Web.Models;
 using PlcLab.Infrastructure;
+using System.Diagnostics;
 
 namespace PlcLab.Web.Pages
 {
     public class IndexViewModel
     {
+        private static readonly ActivitySource ActivitySource = new ActivitySource("PlcLab.Web.IndexViewModel");
         public IOpcUaClientFactory UaFactory { get; }
         public IConfiguration Configuration { get; }
         public DemoDataSeederHostedService AddService { get; }
@@ -86,6 +88,8 @@ namespace PlcLab.Web.Pages
             var endpoint = Configuration["OpcUa:Endpoint"] ?? "opc.tcp://localhost:4840";
             IsConnecting = true;
             OpcStatus = $"Connecting to {endpoint}...";
+            using var activity = ActivitySource.StartActivity("OpcUaConnect");
+            activity?.SetTag("opc.endpoint", endpoint);
             try
             {
                 if (Session != null)
@@ -105,10 +109,13 @@ namespace PlcLab.Web.Pages
                 Session = await UaFactory.CreateSessionAsync(endpoint, useSecurity: false);
                 var sessionId = Session?.SessionId?.ToString() ?? "(unknown)";
                 OpcStatus = $"Connected (SessionId: {sessionId})";
+                activity?.SetTag("opc.sessionId", sessionId);
             }
             catch (Exception ex)
             {
                 OpcStatus = $"Connection failed: {ex.Message}";
+                activity?.SetTag("error", true);
+                activity?.SetTag("exception.message", ex.Message);
             }
             finally
             {

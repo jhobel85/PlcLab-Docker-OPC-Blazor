@@ -18,5 +18,9 @@
     <ProjectReference Include="..\PlcLab.Application\PlcLab.Application.csproj" />
     <ProjectReference Include="..\PlcLab.Infrastructure\PlcLab.Infrastructure.csproj" />
     <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
 </Project>

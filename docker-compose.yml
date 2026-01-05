@@ -8,9 +8,10 @@ services:
       - OpcUa__Endpoint=opc.tcp://opcua-refserver:50000
       - Seed__Enabled=true
       - ASPNETCORE_ENVIRONMENT=Development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
     depends_on:
-      opcua-refserver:
-        condition: service_started
+      - opcua-refserver
+      - jaeger
   opcua-refserver:
     image: mcr.microsoft.com/iotedge/opc-plc:latest
     ports:
@@ -20,3 +21,11 @@ services:
     #--pn=50000     Port number for the OPC UA server
     #--unsecuretransport - Enables None/None security endpoint
     #--aa - Auto-accept all client certificates
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true

@@ -5,6 +5,10 @@ using Opc.Ua.Client;
 using PlcLab.OPC;
 using PlcLab.Web;
 using Serilog;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Exporter;
+using PlcLab.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 // Add SQL Server DbContext
@@ -19,6 +23,9 @@ builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
 builder.Services.AddScoped<PlcLab.Web.Pages.IndexViewModel>();
 builder.Services.AddSingleton<PlcLab.Infrastructure.DemoDataSeederHostedService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.DemoDataSeederHostedService>());
+
+// OpenTelemetry tracing configuration
+builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
 var app = builder.Build();
 // Register API endpoint for seed info
 PlcLab.Web.Services.SeedInfoApi.MapSeedInfoEndpoint(app);
