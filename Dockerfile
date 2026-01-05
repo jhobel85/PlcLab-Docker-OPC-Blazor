@@ -1,5 +1,5 @@
-# Use the official .NET 9 SDK image to build the app
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+## Use the official .NET 8 SDK image to build the app
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy the solution and project files
@@ -10,6 +10,7 @@ COPY src/PlcLab.Application/PlcLab.Application.csproj src/PlcLab.Application/
 COPY src/PlcLab.Infrastructure/PlcLab.Infrastructure.csproj src/PlcLab.Infrastructure/
 COPY src/PlcLab.OPC/PlcLab.OPC.csproj src/PlcLab.OPC/
 COPY src/PlcLab.Web/PlcLab.Web.csproj src/PlcLab.Web/
+COPY tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj tests/PlcLab.Web.Tests/
 
 # Clear NuGet cache to avoid Windows path issues
 RUN dotnet nuget locals all --clear
@@ -27,8 +28,8 @@ RUN dotnet build -c Release
 # Publish the app
 RUN dotnet publish -c Release -o /app/publish
 
-# Use the official .NET 9 runtime image for the final stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+## Use the official .NET 8 runtime image for the final stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 # Create PKI directories for OPC UA certificates
 RUN mkdir -p /app/pki/trusted /app/pki/rejected

@@ -12,12 +12,8 @@
 @inject NavigationManager NavigationManager
 
 @code {
-    private IndexViewModel _vm;
+    private IndexViewModel? _vm;
 
-    public Index(IndexViewModel vm)
-    {
-        _vm = vm;
-    }
 
     protected override async Task OnInitializedAsync()
     {
