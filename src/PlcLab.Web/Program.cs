@@ -1,14 +1,18 @@
 using PlcLab.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Opc.Ua;
-using Opc.Ua.Client;
 using PlcLab.OPC;
 using PlcLab.Web;
 using Serilog;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using OpenTelemetry.Exporter;
 using PlcLab.Web.Services;
+using PlcLab.Web.ViewModel;
+
+// Configure Serilog before building
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 // Add SQL Server DbContext
@@ -20,15 +24,19 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
 builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
 // Register demo data seeder hosted service and as injectable singleton
-builder.Services.AddScoped<PlcLab.Web.Pages.IndexViewModel>();
+builder.Services.AddScoped<IndexViewModel>();
 builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.SeederHostedService>());
+// Register OPC UA endpoint service as scoped - (if singleton we getannot consume scoped service 'Microsoft.JSInterop.IJSRuntime')
+builder.Services.AddScoped<OpcUaEndpointService>();
+// Register connection status service as singleton to share connection state across all pages
+builder.Services.AddSingleton<ConnectionStatusService>();
 
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
 var app = builder.Build();
 // Register API endpoint for seed info
-PlcLab.Web.Services.SeedInfoApi.MapSeedInfoEndpoint(app);
+SeedInfoApi.MapSeedInfoEndpoint(app);
 app.UseHttpsRedirection();
 //app.UseAuthentication();
 //app.UseAuthorization();

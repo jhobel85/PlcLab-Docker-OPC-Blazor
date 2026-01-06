@@ -1,0 +1,90 @@
+@page "/opcua-browser"
+@using PlcLab.Web.Components
+@layout MainLayout
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components.Web
+@using PlcLab.OPC
+@using PlcLab.Web.Components
+@using Microsoft.JSInterop
+@using PlcLab.Infrastructure
+@using PlcLab.Web.ViewModel
+@using Serilog;
+@inject IOpcUaClientFactory UaFactory
+@inject IConfiguration Configuration
+@inject SeederHostedService AddService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject PlcLab.Web.Services.OpcUaEndpointService EndpointService
+@inject PlcLab.Web.Services.ConnectionStatusService ConnectionStatusService
+
+@implements IDisposable
+@code {
+    private IndexViewModel? _vm;
+    private bool _initialized;
+
+    protected override void OnInitialized()
+    {
+        _vm = new IndexViewModel(UaFactory, Configuration, AddService, NavigationManager);
+        _vm.StatusChanged += OnViewModelStatusChanged;
+        EndpointService.EndpointChanged += OnEndpointChanged;
+        ConnectionStatusService.ReconnectRequested += ReconnectSession;
+        _vm.SelectedEndpoint = EndpointService.Endpoint;
+    }
+
+    public void Dispose()
+    {
+        if (_vm != null)
+            _vm.StatusChanged -= OnViewModelStatusChanged;
+        EndpointService.EndpointChanged -= OnEndpointChanged;
+        ConnectionStatusService.ReconnectRequested -= ReconnectSession;
+    }
+
+    private async Task ReconnectSession()
+    {
+        if (_vm == null)
+        {
+            Log.Debug("[OpcUaBrowser] ReconnectSession: _vm is null");
+            return;
+        }
+
+        Log.Debug($"[OpcUaBrowser] ReconnectSession: Starting connection to {_vm.SelectedEndpoint}");
+        await _vm.InitializeAsync();
+        Log.Debug($"[OpcUaBrowser] ReconnectSession: After InitializeAsync, Status={_vm.OpcStatus}, Session={_vm.Session?.SessionId}");
+        StateHasChanged();
+    }
+
+    private void OnViewModelStatusChanged()
+    {
+        ConnectionStatusService.Status = _vm?.OpcStatus ?? "Not connected";
+        ConnectionStatusService.CurrentSession = _vm?.Session;
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _vm != null && !_initialized)
+        {
+            _initialized = true;
+            await EndpointService.LoadFromLocalStorage();
+            _vm.SelectedEndpoint = EndpointService.Endpoint;
+            // Do NOT connect automatically. Only connect on Reconnect button click.
+            StateHasChanged();
+        }
+    }
+
+    private void OnEndpointChanged()
+    {
+        if (_vm != null)
+        {
+            _vm.SelectedEndpoint = EndpointService.Endpoint;
+            _ = _vm.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+}
+
+<h4>OPC UA Browser</h4>
+
+<div class="mt-4">
+  <OpcUaBrowser Session="@(_vm?.Session)" />
+</div>

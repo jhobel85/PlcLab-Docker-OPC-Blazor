@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Opc.Ua.Client;
 using PlcLab.OPC;
-// using PlcLab.Web.Models;
-using PlcLab.Infrastructure;
 using PlcLab.Infrastructure;
 using System.Diagnostics;
 
-namespace PlcLab.Web.Pages
+namespace PlcLab.Web.ViewModel
 {
     public class IndexViewModel
     {

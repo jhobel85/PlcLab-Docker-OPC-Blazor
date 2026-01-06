@@ -13,6 +13,7 @@ namespace PlcLab.Infrastructure
     {
         private readonly IConfiguration _configuration = configuration;
         private readonly IOpcUaClientFactory _opcFactory = opcFactory;
+        private readonly BrowseService _browseService = new BrowseService(configuration, opcFactory);
 
         private SeedInfo? _seedInfo;
         private Session? _session;
@@ -77,24 +78,7 @@ namespace PlcLab.Infrastructure
             throw new NotImplementedException($"Method {methodName} is not implemented in SeederHostedService.");
         }
 
-        // Recursively browse all nodes and log their details        
-        private async Task RecursiveBrowseAsync(Session session, NodeId nodeId, CancellationToken ct, string indent)
-        {
-            var children = await _opcFactory.BrowseAsync(session, nodeId, ct);
-            foreach (var child in children)
-            {
-                Log.Information("{Indent}- DisplayName: {DisplayName}, BrowseName: {BrowseName}, NodeId: {NodeId}, NodeClass: {NodeClass}",
-                    indent, child.DisplayName.Text, child.BrowseName.ToString(), child.NodeId, child.NodeClass);
-                // Recurse into child nodes that are Objects or Folders
-                if (child.NodeClass == NodeClass.Object || child.NodeClass == NodeClass.Variable || child.NodeClass == NodeClass.Method)
-                {
-                    var childNodeId = ExpandedNodeId.ToNodeId(child.NodeId, session.NamespaceUris);
-                    await RecursiveBrowseAsync(session, childNodeId, ct, indent + "  ");
-                }
-            }
-        }
-
-        private async Task<SeedInfo> SeedDemoDataAsync(Session session, CancellationToken cancellationToken)
+       private async Task<SeedInfo> SeedDemoDataAsync(Session session, CancellationToken cancellationToken)
         {
             if (session == null)
                 throw new InvalidOperationException("Not connected to OPC UA server.");
@@ -151,7 +135,7 @@ namespace PlcLab.Infrastructure
             var methodId = new NodeId(methodEntry.NodeId);
 
             // The objectId is typically the parent node of the method node. If you know it, you can hardcode it; otherwise, fetch as before.
-            var objectId = await GetParentNodeIdAsync(session, methodId);
+            var objectId = await _browseService.GetParentNodeIdAsync(session, methodId);
 
             if (objectId == null || methodId == null)
             {
@@ -187,14 +171,6 @@ namespace PlcLab.Infrastructure
                     throw;
                 }
             }
-        }
-
-        // Helper to get parent node of a given node by browsing inverse references
-        private async Task<NodeId> GetParentNodeIdAsync(Session session, NodeId nodeId)
-        {
-            var refs = await session.FetchReferencesAsync(nodeId).ConfigureAwait(false);
-            var parentRef = refs.FirstOrDefault(r => r.ReferenceTypeId == ReferenceTypeIds.HasComponent && r.IsForward == false) ?? throw new Exception("Parent node not found for method node.");
-            return ExpandedNodeId.ToNodeId(parentRef.NodeId, session.NamespaceUris);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)

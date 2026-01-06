@@ -11,8 +11,9 @@ namespace PlcLab.Web.Services
     {
         public static IServiceCollection AddPlcLabOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
         {
-            var endpoint = configuration["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? "http://jaeger:4317";
-            
+            // Make OTLP optional: only wire exporter when endpoint is provided.
+            var endpoint = configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
+
             services
                 .AddOpenTelemetry()
                 .ConfigureResource(resource => resource
@@ -28,15 +29,21 @@ namespace PlcLab.Web.Services
                         .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
                         .AddSource("PlcLab.Web.IndexViewModel")
                         .AddAspNetCoreInstrumentation()
-                        .AddHttpClientInstrumentation()
-                        .AddOtlpExporter(o =>
+                        .AddHttpClientInstrumentation();
+
+                    if (!string.IsNullOrWhiteSpace(endpoint))
+                    {
+                        tp.AddOtlpExporter(o =>
                         {
                             o.Endpoint = new Uri(endpoint);
                             o.Protocol = OtlpExportProtocol.Grpc;
                         });
+                    }
                 });
 
-            Console.WriteLine($"OpenTelemetry configured with Jaeger endpoint: {endpoint}");
+            Console.WriteLine(string.IsNullOrWhiteSpace(endpoint)
+                ? "OpenTelemetry configured without OTLP exporter (set OTEL_EXPORTER_OTLP_ENDPOINT to enable)."
+                : $"OpenTelemetry configured with OTLP endpoint: {endpoint}");
             return services;
         }
     }

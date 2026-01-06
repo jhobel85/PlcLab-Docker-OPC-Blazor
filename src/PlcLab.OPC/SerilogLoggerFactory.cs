@@ -11,14 +11,7 @@ public sealed class SerilogTelemetry : TelemetryContextBase
 
     public static SerilogTelemetry Create()
     {
-        // 1) Configure Serilog
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .Enrich.FromLogContext()
-            .WriteTo.Console()            // add more sinks as needed
-            .CreateLogger();
-
-        // 2) Bridge Serilog -> Microsoft.Extensions.Logging
+        // Use the already-configured Serilog logger from Program.cs
         var msLoggerFactory = new SerilogLoggerFactory(Log.Logger, dispose: false);
         return new SerilogTelemetry(msLoggerFactory);
     }
