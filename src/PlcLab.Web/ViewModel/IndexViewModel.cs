@@ -13,7 +13,6 @@ namespace PlcLab.Web.ViewModel
         public IConfiguration Configuration { get; }
         public SeederHostedService SeedService { get; }
         public NavigationManager NavigationManager { get; }
-
         public string OpcStatus { get; private set; } = "Not connected";
         public bool IsConnecting { get; private set; }
         public Session? Session { get; private set; }
@@ -91,6 +90,7 @@ namespace PlcLab.Web.ViewModel
         }
 
         public event Action? StatusChanged;
+        public event Action? Connected;
 
         public async Task ReconnectAsync()
         {
@@ -144,6 +144,7 @@ namespace PlcLab.Web.ViewModel
                 if (Session != null && Session.Connected)
                 {
                     OpcStatus = $"Connected (SessionId: {sessionId})";
+                    Connected?.Invoke();
                 }
                 else if (connectFailed)
                 {
@@ -156,6 +157,11 @@ namespace PlcLab.Web.ViewModel
                 IsConnecting = false;
                 StatusChanged?.Invoke();
             }
+        }
+
+        public void ClearSeedInfo()
+        {
+            SeedInfo = null;
         }
     }
 }

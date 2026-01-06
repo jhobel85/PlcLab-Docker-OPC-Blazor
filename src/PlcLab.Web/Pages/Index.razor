@@ -1,6 +1,5 @@
-
-@page "/"
 @rendermode @(new InteractiveServerRenderMode())
+@page "/"
 @using PlcLab.OPC
 @using PlcLab.Web.Pages
 @using PlcLab.Infrastructure
@@ -8,46 +7,43 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using PlcLab.Web.ViewModel
-@inject IOpcUaClientFactory UaFactory
-@inject IConfiguration Configuration
-@inject SeederHostedService AddService
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 
 @code {
-    private IndexViewModel? _vm;
-    private bool _initialized = false;
+  @inject PlcLab.Web.ViewModel.IndexViewModel _vm
     private double? _addMethodResult;
     private string? _addMethodDebug;
 
-    protected override async Task OnInitializedAsync()
+
+    protected override void OnInitialized()
     {
-      _vm = new IndexViewModel(UaFactory, Configuration, AddService, NavigationManager);
-      _vm.StatusChanged += StateHasChanged;
+      if (_vm != null)
+      {
+        _vm.Connected += OnConnected;
+        _vm.StatusChanged += OnStatusChanged;
+      }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async void OnConnected()
     {
-      if (!_initialized && _vm != null)
+      if (_vm != null)
       {
-        _initialized = true;
-        // Try to restore endpoint from localStorage
-        var endpoint = await JS.InvokeAsync<string>("localStorage.getItem", "opcua-endpoint");
-        if (!string.IsNullOrWhiteSpace(endpoint))
-        {
-          _vm.SelectedEndpoint = endpoint;
-        }
-        else
-        {
-          // Default to Virtual PLC if nothing in localStorage
-          _vm.SelectedEndpoint = "opc.tcp://opcua-refserver:50000";
-        }
-        await _vm.InitializeAsync();
+        await _vm.LoadSeedInfoAsync();
         await FetchAddMethodResultAsync();
         StateHasChanged();
       }
     }
 
+    private void OnStatusChanged()
+    {
+      if (_vm == null || _vm.Session == null || !_vm.Session.Connected)
+      {
+        _addMethodResult = null;
+        _addMethodDebug = null;
+        if (_vm != null) _vm.ClearSeedInfo();
+        StateHasChanged();
+      }
+    }
 
     private async Task FetchAddMethodResultAsync()
     {
@@ -73,30 +69,7 @@
       }
     }
 
-    private async Task OnEndpointChanged(ChangeEventArgs e)
-    {
-      if (_vm != null && e.Value is string endpoint)
-      {
-        _vm.SelectedEndpoint = endpoint;
-        await JS.InvokeVoidAsync("localStorage.setItem", "opcua-endpoint", endpoint);
-        await ReconnectAndUpdate();
-      }
-    }
-
-    private async Task ReconnectAndUpdate()
-    {
-      if (_vm != null)
-      {
-        await _vm.ReconnectAsync();
-        // Always reload seed info after reconnect to ensure UI is up to date
-        await _vm.LoadSeedInfoAsync();
-        await FetchAddMethodResultAsync();
-        // Always update status message after reconnect
-        StateHasChanged();
-      }
-    }
-
-     private async Task OnRefreshSeedData()
+    private async Task OnRefreshSeedData()
     {
         if (_vm != null)
         {
@@ -110,20 +83,7 @@
 
 <h4>Welcome to PlcLab</h4>
 <div>
-  <p>OPC UA application: @UaFactory.GetApplicationName()</p>
-  <div class="mb-2">
-    <label for="endpointSelect"><strong>OPC UA Endpoint:</strong></label>
-    <select id="endpointSelect" class="form-select w-auto d-inline-block mx-2" @onchange="OnEndpointChanged" value="@(_vm?.SelectedEndpoint ?? string.Empty)">
-      <option value="opc.tcp://opcua-refserver:50000">Virtual PLC (opcua-refserver:50000 - Docker)</option>
-      <option value="opc.tcp://127.0.0.1:4840">Virtual PLC (127.0.0.1:4840 - localhost)</option>
-      <option value="opc.tcp://localhost:4841">In-process Mock Server</option>
-    </select>
-    <button class="btn btn-sm btn-primary ms-2" @onclick="ReconnectAndUpdate" disabled="@(_vm?.IsConnecting ?? true)">Reconnect</button>
-  </div>
-  <div class="my-2">
-    <strong>Status:</strong>
-    <span class="badge bg-@(_vm?.Session != null ? "success" : "danger")" style="font-size:1rem;">@(_vm?.OpcStatus ?? "Not connected")</span>    
-  </div>
+  <p>OPC UA application: @_vm?.UaFactory.GetApplicationName()</p>
 
   <div class="d-flex align-items-center mb-2">
     <span><strong>Click Count:</strong> @(_vm?.ClickCount ?? 0) (test to verify component is interactive)</span>
@@ -148,39 +108,45 @@
     <ResultsExplorer />
   </div>
 
-@if (_vm?.SeedInfo?.SeedEnabled == true && _vm?.SelectedEndpoint != "opc.tcp://localhost:4841" && _vm?.Session != null && _vm.Session.Connected)
+@if (_vm?.Session != null && _vm.Session.Connected)
 {
     <div class="alert alert-info mt-3">
-    <div class="d-flex align-items-center mb-2">
-      <strong>Static (Seed) Data :</strong>
-      <button class="btn btn-sm btn-outline-secondary ms-3" @onclick="OnRefreshSeedData" title="Refresh Seed Data">
-        <span class="bi-arrow-clockwise"></span> Refresh
-      </button>
+        <div class="d-flex align-items-center mb-2">
+            <strong>Static (Seed) Data :</strong>
+            <button class="btn btn-sm btn-outline-secondary ms-3" @onclick="OnRefreshSeedData" title="Refresh Seed Data">
+                <span class="bi-arrow-clockwise"></span> Refresh
+            </button>
+        </div>
+        @if (_vm?.SeedInfo?.Variables?.Count > 0)
+        {
+            <ul>
+                @foreach (var v in _vm.SeedInfo.Variables)
+                {
+                    <li>
+                        <b>@v.Label</b> (<code>@v.NodeId</code>): <span>@v.Value</span>
+                    </li>
+                }
+                @if (_addMethodResult != null || !string.IsNullOrEmpty(_addMethodDebug))
+                {
+                    <li class="mt-2">
+                        <div class="ms-3 text-muted">Method 'Add' result: <b>@_addMethodResult</b></div>
+                        @if (!string.IsNullOrEmpty(_addMethodDebug))
+                        {
+                            <div class="ms-3 small">@_addMethodDebug</div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <span>No demo variables found or OPC UA server not reachable.</span>
+        }
     </div>
-    @if (_vm?.SeedInfo?.Variables?.Count > 0)
-    {
-      <ul>
-        @foreach (var v in _vm.SeedInfo.Variables)
-        {
-          <li>
-            <b>@v.Label</b> (<code>@v.NodeId</code>): <span>@v.Value</span>
-          </li>
-        }
-        @if (_addMethodResult != null || !string.IsNullOrEmpty(_addMethodDebug))
-        {
-          <li class="mt-2">
-            <div class="ms-3 text-muted">Method 'Add' result: <b>@_addMethodResult</b></div>
-            @if (!string.IsNullOrEmpty(_addMethodDebug))
-            {
-              <div class="ms-3 small">@_addMethodDebug</div>
-            }
-          </li>
-        }
-      </ul>
-    }
-    else
-    {
-      <span>No demo variables found or OPC UA server not reachable.</span>
-    }
-  </div>
+}
+else
+{
+    <div class="alert alert-warning mt-3">
+        No OPC UA session. Please connect to see static (seed) data.
+    </div>
 }

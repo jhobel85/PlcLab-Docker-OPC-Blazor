@@ -1,0 +1,41 @@
+@rendermode @(new InteractiveServerRenderMode())
+@using PlcLab.Web.ViewModel
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+@inject IndexViewModel ViewModel
+@inject IJSRuntime JS
+
+@code {
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (e.Value is string endpoint)
+        {
+            ViewModel.SelectedEndpoint = endpoint;
+            await JS.InvokeVoidAsync("localStorage.setItem", "opcua-endpoint", endpoint);
+            await ReconnectAndUpdate();
+        }
+    }
+
+    private async Task ReconnectAndUpdate()
+    {
+        await ViewModel.ReconnectAsync();
+        await ViewModel.LoadSeedInfoAsync();
+        StateHasChanged();
+    }
+}
+
+<div class="mb-2">
+    <label for="endpointSelect"><strong>OPC UA Endpoint:</strong></label>
+    <select id="endpointSelect" class="form-select w-auto d-inline-block mx-2" @onchange="OnEndpointChanged" value="@ViewModel.SelectedEndpoint">
+        <option value="opc.tcp://opcua-refserver:50000">Virtual PLC (opcua-refserver:50000 - Docker)</option>
+        <option value="opc.tcp://127.0.0.1:4840">Virtual PLC (127.0.0.1:4840 - localhost)</option>
+        <option value="opc.tcp://localhost:4841">In-process Mock Server</option>
+    </select>
+    <button class="btn btn-sm btn-primary ms-2" @onclick="ReconnectAndUpdate" disabled="@ViewModel.IsConnecting">Reconnect</button>
+</div>
+<div class="my-2">
+    <strong>Status:</strong>
+    <span class="badge bg-@(ViewModel.Session != null ? "success" : "danger")" style="font-size:1rem;">@ViewModel.OpcStatus</span>
+</div>
