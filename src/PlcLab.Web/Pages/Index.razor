@@ -26,17 +26,17 @@
 <h4>Welcome to PlcLab</h4>
 <div>
   <p>OPC UA application: @UaFactory.GetApplicationName()</p>
-  <p><strong>Status:</strong> @_vm.OpcStatus @if (_vm.Session != null) { <span>(Session: @_vm.Session.SessionId)</span> }</p>
-  <p><strong>Click Count:</strong> @_vm.ClickCount (test to verify component is interactive)</p>
-  <button class="btn btn-primary" @onclick="_vm.ReconnectAsync" disabled="@_vm.IsConnecting">Reconnect</button>
-  <button class="btn btn-secondary" @onclick="_vm.TestButtonClick">Test Button</button>
+  <p><strong>Status:</strong> @if (_vm != null &&_vm.Session != null) { <span>(Session: @_vm.Session.SessionId)</span> }</p>
+  <p><strong>Click Count:</strong> @(_vm?.ClickCount ?? 0) (test to verify component is interactive)</p>
+  <button class="btn btn-primary" @onclick="() => _vm != null ? _vm.ReconnectAsync() : Task.CompletedTask" disabled="@(_vm?.IsConnecting ?? true)">Reconnect</button>
+  <button class="btn btn-secondary" @onclick="() => _vm?.TestButtonClick()">Test Button</button>
 </div>
 
-@if (_vm.SeedInfo != null && _vm.SeedInfo.SeedEnabled)
+@if (_vm?.SeedInfo?.SeedEnabled == true)
 {
   <div class="alert alert-info mt-3">
     <strong>Seed Data (Demo Variables):</strong>
-    @if (_vm.SeedInfo.Variables?.Count > 0)
+    @if (_vm?.SeedInfo?.Variables?.Count > 0)
     {
       <ul>
         @foreach (var v in _vm.SeedInfo.Variables)
@@ -56,13 +56,13 @@
     <div class="input-group mb-2 mt-2">
       <input type="number" class="form-control" placeholder="Number 1" @bind="_vm.AddNum1" />
       <input type="number" class="form-control" placeholder="Number 2" @bind="_vm.AddNum2" />
-      <button class="btn btn-success" @onclick="_vm.CallAddMethodAsync" disabled="@(_vm.Session == null)">Add</button>
+      <button class="btn btn-success" @onclick="_vm.CallAddMethodAsync" disabled="@(_vm?.Session == null)">Add</button>
     </div>
-    @if (_vm.AddResult != null)
+    @if (_vm != null && _vm.AddResult != null)
     {
       <div class="alert alert-success">Add Result: <strong>@_vm.AddResult</strong></div>
     }
-    @if (!string.IsNullOrEmpty(_vm.AddError))
+    @if (!string.IsNullOrEmpty(_vm?.AddError))
     {
       <div class="alert alert-danger">Error: @_vm.AddError</div>
     }
