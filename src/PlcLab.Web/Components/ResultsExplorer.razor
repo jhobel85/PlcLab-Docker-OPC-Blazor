@@ -1,0 +1,87 @@
+@using System.Globalization
+
+<h5>Results Explorer</h5>
+<div class="mb-2">
+    <input class="form-control w-auto d-inline-block" style="width:200px" placeholder="Filter by plan..." @bind="Filter" />
+    <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ExportCsv">Export CSV</button>
+</div>
+@if (Results.Count == 0)
+{
+    <div>No results found.</div>
+}
+else
+{
+    <table class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>Plan</th>
+                <th>Run Date</th>
+                <th>Status</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in FilteredResults)
+            {
+                <tr>
+                    <td>@r.PlanName</td>
+                    <td>@r.RunDate.ToString("g", CultureInfo.CurrentCulture)</td>
+                    <td>@r.Status</td>
+                    <td><button class="btn btn-sm btn-link" @onclick="() => ShowDetails(r)">View</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (SelectedResult != null)
+{
+    <div class="alert alert-info mt-3">
+        <b>Result Details:</b><br />
+        <b>Plan:</b> @SelectedResult.PlanName<br />
+        <b>Date:</b> @SelectedResult.RunDate.ToString("f", CultureInfo.CurrentCulture)<br />
+        <b>Status:</b> @SelectedResult.Status<br />
+        <b>Summary:</b> @SelectedResult.Summary
+        <button class="btn btn-sm btn-secondary ms-2" @onclick="() => SelectedResult = null">Close</button>
+    </div>
+}
+
+@code {
+    private string Filter = string.Empty;
+    private List<Result> Results = new();
+    private Result? SelectedResult;
+    private IEnumerable<Result> FilteredResults => string.IsNullOrWhiteSpace(Filter)
+        ? Results
+        : Results.Where(r => r.PlanName.Contains(Filter, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO: Replace with real API call
+        await Task.Delay(200);
+        Results = new List<Result>
+        {
+            new Result { PlanName = "Demo Plan 1", RunDate = DateTime.Now.AddDays(-1), Status = "Passed", Summary = "All tests passed." },
+            new Result { PlanName = "Demo Plan 2", RunDate = DateTime.Now.AddDays(-2), Status = "Failed", Summary = "2 tests failed." }
+        };
+    }
+
+    private void ShowDetails(Result r)
+    {
+        SelectedResult = r;
+    }
+
+    private void ExportCsv()
+    {
+        // TODO: Implement CSV export (browser download)
+        // For now, just show an alert
+        Console.WriteLine("Export CSV clicked");
+    }
+
+    public class Result
+    {
+        public string PlanName { get; set; } = string.Empty;
+        public DateTime RunDate { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+    }
+}

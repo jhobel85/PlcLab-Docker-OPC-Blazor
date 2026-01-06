@@ -21,8 +21,8 @@ builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create())
 builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
 // Register demo data seeder hosted service and as injectable singleton
 builder.Services.AddScoped<PlcLab.Web.Pages.IndexViewModel>();
-builder.Services.AddSingleton<PlcLab.Infrastructure.DemoDataSeederHostedService>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.DemoDataSeederHostedService>());
+builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.SeederHostedService>());
 
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);

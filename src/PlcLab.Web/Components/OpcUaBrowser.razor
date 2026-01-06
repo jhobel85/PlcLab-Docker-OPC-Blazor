@@ -1,0 +1,89 @@
+@using Opc.Ua
+@using Opc.Ua.Client
+@using PlcLab.OPC
+@inject IOpcUaClientFactory UaFactory
+
+@if (Session == null)
+{
+    <div class="alert alert-warning">Not connected to OPC UA server.</div>
+}
+else
+{
+    <div>
+        <h5>OPC UA Browser</h5>
+        <button class="btn btn-sm btn-outline-primary mb-2" @onclick="LoadRoot">Browse Root</button>
+        @if (RootNodes == null)
+        {
+            <div>Loading...</div>
+        }
+        else
+        {
+            <ul>
+                @foreach (var node in RootNodes)
+                {
+                    <li>
+                        <span @onclick="() => OnNodeClick(node)" style="cursor:pointer;">@node.DisplayName.Text</span>
+                        @if (SelectedNode == node)
+                        {
+                            <div class="ms-3">
+                                <b>NodeId:</b> @node.NodeId <br />
+                                <b>BrowseName:</b> @node.BrowseName <br />
+                                <b>NodeClass:</b> @node.NodeClass <br />
+                                <button class="btn btn-sm btn-secondary mt-1" @onclick="() => LoadChildren(node)">Browse Children</button>
+                                @if (ChildNodes != null)
+                                {
+                                    <ul>
+                                        @foreach (var child in ChildNodes)
+                                        {
+                                            <li>
+                                                <span @onclick="() => OnNodeClick(child)" style="cursor:pointer;">@child.DisplayName.Text</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Session? Session { get; set; }
+    private ReferenceDescriptionCollection? RootNodes;
+    private ReferenceDescriptionCollection? ChildNodes;
+    private ReferenceDescription? SelectedNode;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Session != null && RootNodes == null)
+        {
+            await LoadRoot();
+        }
+    }
+
+    private async Task LoadRoot()
+    {
+        if (Session == null) return;
+        RootNodes = await UaFactory.BrowseAsync(Session, ObjectIds.ObjectsFolder);
+        SelectedNode = null;
+        ChildNodes = null;
+        StateHasChanged();
+    }
+
+    private async Task LoadChildren(ReferenceDescription node)
+    {
+        if (Session == null) return;
+        var nodeId = ExpandedNodeId.ToNodeId(node.NodeId, Session.NamespaceUris);
+        ChildNodes = await UaFactory.BrowseAsync(Session, nodeId);
+        StateHasChanged();
+    }
+
+    private void OnNodeClick(ReferenceDescription node)
+    {
+        SelectedNode = node;
+        ChildNodes = null;
+    }
+}

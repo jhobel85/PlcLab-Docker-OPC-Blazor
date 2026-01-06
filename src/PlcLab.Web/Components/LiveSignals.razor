@@ -1,0 +1,90 @@
+@using Opc.Ua
+@using Opc.Ua.Client
+@using PlcLab.OPC
+@inject IOpcUaClientFactory UaFactory
+
+@if (Session == null)
+{
+    <div class="alert alert-warning">Not connected to OPC UA server.</div>
+}
+else
+{
+    <div>
+        <h5>Live Signals</h5>
+        <button class="btn btn-sm btn-outline-primary mb-2" @onclick="SubscribeToSignals" disabled="@IsSubscribed">Subscribe</button>
+        <button class="btn btn-sm btn-outline-secondary mb-2 ms-2" @onclick="Unsubscribe" disabled="@(!IsSubscribed)">Unsubscribe</button>
+        @if (SignalValues.Count == 0)
+        {
+            <div>No signals yet.</div>
+        }
+        else
+        {
+            <table class="table table-sm table-bordered mt-2">
+                <thead>
+                    <tr><th>Signal</th><th>Value</th><th>Timestamp</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var kv in SignalValues)
+                    {
+                        <tr>
+                            <td>@kv.Key</td>
+                            <td>@kv.Value.Value</td>
+                            <td>@kv.Value.Timestamp.ToLocalTime()</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Session? Session { get; set; }
+    private Subscription? Subscription;
+    private bool IsSubscribed;
+    private Dictionary<string, (object? Value, DateTime Timestamp)> SignalValues = new();
+    private List<(string label, string path)> DemoSignals = new()
+    {
+        ("Process/State", "ReferenceTest/Scalar/Scalar_Static/Boolean"),
+        ("Analog/Flow", "ReferenceTest/Scalar/Scalar_Static/Double"),
+        ("Digital/ValveOpen", "ReferenceTest/Scalar/Scalar_Static/Boolean")
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (Session == null)
+        {
+            Unsubscribe();
+        }
+    }
+
+    private async Task SubscribeToSignals()
+    {
+        if (Session == null || IsSubscribed) return;
+        Subscription = await UaFactory.CreateSubscriptionAsync(Session);
+        foreach (var (label, path) in DemoSignals)
+        {
+            var nodeId = await UaFactory.ResolveNodeIdAsync(Session, path);
+            await UaFactory.AddMonitoredItemAsync(Subscription, nodeId, (item, args) =>
+            {
+                var value = args.NotificationValue as Opc.Ua.DataValue;
+                SignalValues[label] = (value?.Value, value?.SourceTimestamp ?? DateTime.UtcNow);
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        IsSubscribed = true;
+        StateHasChanged();
+    }
+
+    private async void Unsubscribe()
+    {
+        if (Subscription != null)
+        {
+            await Subscription.DeleteAsync(true);
+            Subscription = null;
+        }
+        IsSubscribed = false;
+        SignalValues.Clear();
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,83 @@
+@inject NavigationManager NavigationManager
+
+<h5>Run Wizard</h5>
+@if (TestPlans == null)
+{
+    <div>Loading test plans...</div>
+}
+else
+{
+    <div>
+        <label for="planSelect"><b>Select Test Plan:</b></label>
+        <select id="planSelect" class="form-select w-auto d-inline-block mx-2" @bind="SelectedPlanId">
+            <option value="">-- Select --</option>
+            @foreach (var plan in TestPlans)
+            {
+                <option value="@plan.Id">@plan.Name</option>
+            }
+        </select>
+        <button class="btn btn-primary ms-2" @onclick="StartRun" disabled="@(string.IsNullOrEmpty(SelectedPlanId) || IsRunning)">Start</button>
+    </div>
+    @if (IsRunning)
+    {
+        <div class="mt-3">
+            <b>Progress:</b> @Progress%
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" style="width: @Progress%" aria-valuenow="@Progress" aria-valuemin="0" aria-valuemax="100">@Progress%</div>
+            </div>
+            <div class="mt-2">@StatusMessage</div>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(ResultMessage))
+    {
+        <div class="alert alert-success mt-3">@ResultMessage</div>
+    }
+}
+
+@code {
+    private List<TestPlan> TestPlans = new();
+    private string? SelectedPlanId;
+    private bool IsRunning;
+    private int Progress;
+    private string StatusMessage = string.Empty;
+    private string ResultMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO: Replace with real API call
+        await Task.Delay(200); // Simulate load
+        TestPlans = new List<TestPlan>
+        {
+            new TestPlan { Id = "plan1", Name = "Demo Plan 1" },
+            new TestPlan { Id = "plan2", Name = "Demo Plan 2" }
+        };
+    }
+
+    private async Task StartRun()
+    {
+        if (string.IsNullOrEmpty(SelectedPlanId)) return;
+        IsRunning = true;
+        Progress = 0;
+        StatusMessage = "Starting test run...";
+        ResultMessage = string.Empty;
+        StateHasChanged();
+        // Simulate progress
+        for (int i = 1; i <= 10; i++)
+        {
+            await Task.Delay(400);
+            Progress = i * 10;
+            StatusMessage = $"Running step {i} of 10...";
+            StateHasChanged();
+        }
+        StatusMessage = "Test run complete.";
+        ResultMessage = $"Test plan '{TestPlans.FirstOrDefault(p => p.Id == SelectedPlanId)?.Name}' completed successfully.";
+        IsRunning = false;
+        StateHasChanged();
+    }
+
+    public class TestPlan
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+}

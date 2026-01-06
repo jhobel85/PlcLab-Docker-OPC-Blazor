@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using Opc.Ua.Client;
 using PlcLab.OPC;
-using PlcLab.Web.Models;
+// using PlcLab.Web.Models;
+using PlcLab.Infrastructure;
 using PlcLab.Infrastructure;
 using System.Diagnostics;
 
@@ -12,7 +13,7 @@ namespace PlcLab.Web.Pages
         private static readonly ActivitySource ActivitySource = new ActivitySource("PlcLab.Web.IndexViewModel");
         public IOpcUaClientFactory UaFactory { get; }
         public IConfiguration Configuration { get; }
-        public DemoDataSeederHostedService AddService { get; }
+        public SeederHostedService SeedService { get; }
         public NavigationManager NavigationManager { get; }
 
         public string OpcStatus { get; private set; } = "Not connected";
@@ -24,13 +25,16 @@ namespace PlcLab.Web.Pages
         public uint AddNum2 { get; set; }
         public double? AddResult { get; private set; }
         public string AddError { get; private set; } = string.Empty;
+        public string SelectedEndpoint { get; set; }
 
-        public IndexViewModel(IOpcUaClientFactory uaFactory, IConfiguration configuration, DemoDataSeederHostedService addService, NavigationManager navigationManager)
+        public IndexViewModel(IOpcUaClientFactory uaFactory, IConfiguration configuration, SeederHostedService seedService, NavigationManager navigationManager)
         {
             UaFactory = uaFactory;
             Configuration = configuration;
-            AddService = addService;
+            SeedService = seedService;
             NavigationManager = navigationManager;
+            // Default to config value or Virtual PLC
+            SelectedEndpoint = configuration["OpcUa:Endpoint"] ?? "opc.tcp://opcua-refserver:50000";
         }
 
         public async Task InitializeAsync()
@@ -45,7 +49,7 @@ namespace PlcLab.Web.Pages
             AddError = string.Empty;
             try
             {
-                AddResult = await AddService.CallAddMethodAsync(Session, AddNum1, AddNum2);
+                AddResult = await SeedService.CallMethodAsync<double>(Session, "Add", AddNum1, AddNum2);
                 if (AddResult == null)
                     AddError = "No result returned.";
             }
@@ -57,25 +61,44 @@ namespace PlcLab.Web.Pages
 
         public async Task LoadSeedInfoAsync()
         {
+            var variables = new List<SeedVariable>();
+            bool seedEnabled = true;
+            if (Session == null || !Session.Connected)
+            {
+                SeedInfo = new SeedInfo { SeedEnabled = false, Variables = new List<SeedVariable>() };
+                return;
+            }
             try
             {
-                var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
-                var resp = await http.GetAsync("api/seedinfo");
-                if (resp.IsSuccessStatusCode)
+                var nodeIds = SeedDemoData.Variables.Select(v => new Opc.Ua.NodeId(v.NodeId)).ToList();
+                Opc.Ua.DataValue[]? values = null;
+                if (nodeIds.Count > 0)
                 {
-                    var json = await resp.Content.ReadAsStringAsync();
-                    SeedInfo = System.Text.Json.JsonSerializer.Deserialize<SeedInfo>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    var readResult = await Session.ReadValuesAsync(nodeIds);
+                    values = readResult.Item1?.ToArray();
+                }
+                for (int i = 0; i < SeedDemoData.Variables.Length; i++)
+                {
+                    var label = SeedDemoData.Variables[i].Label;
+                    var nodeId = nodeIds[i].ToString();
+                    var value = values != null && i < values.Length ? values[i].Value : null;
+                    variables.Add(new SeedVariable { Label = label, NodeId = nodeId, Value = value?.ToString() ?? string.Empty });
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to load seed info: {ex.Message}");
+                variables.Add(new SeedVariable { Label = "Error", NodeId = "", Value = $"Error: {ex.Message}" });
             }
+            SeedInfo = new SeedInfo { SeedEnabled = seedEnabled, Variables = variables };
         }
+
+        public event Action? StatusChanged;
 
         public async Task ReconnectAsync()
         {
+            // Do not clear OpcStatus here; let TryConnectAsync update it after result is known
             await TryConnectAsync();
+            StatusChanged?.Invoke(); // Notify UI to update after reconnect
         }
 
         public void TestButtonClick()
@@ -85,11 +108,13 @@ namespace PlcLab.Web.Pages
 
         public async Task TryConnectAsync()
         {
-            var endpoint = Configuration["OpcUa:Endpoint"] ?? "opc.tcp://localhost:4840";
+            var endpoint = SelectedEndpoint;
             IsConnecting = true;
-            OpcStatus = $"Connecting to {endpoint}...";
+            StatusChanged?.Invoke();
             using var activity = ActivitySource.StartActivity("OpcUaConnect");
             activity?.SetTag("opc.endpoint", endpoint);
+            bool connectFailed = false;
+            string? connectError = null;
             try
             {
                 if (Session != null)
@@ -107,19 +132,31 @@ namespace PlcLab.Web.Pages
                 }
                 await Task.Delay(1000);
                 Session = await UaFactory.CreateSessionAsync(endpoint, useSecurity: false);
-                var sessionId = Session?.SessionId?.ToString() ?? "(unknown)";
-                OpcStatus = $"Connected (SessionId: {sessionId})";
-                activity?.SetTag("opc.sessionId", sessionId);
             }
             catch (Exception ex)
             {
-                OpcStatus = $"Connection failed: {ex.Message}";
+                connectFailed = true;
+                connectError = ex.Message;
                 activity?.SetTag("error", true);
                 activity?.SetTag("exception.message", ex.Message);
             }
             finally
             {
+                var sessionId = Session?.SessionId?.ToString() ?? "(unknown)";
+                if (Session != null && Session.Connected)
+                {
+                    OpcStatus = $"Connected (SessionId: {sessionId})";
+                }
+                else if (connectFailed)
+                {
+                    OpcStatus = $"Connection failed: {connectError}";
+                }
+                else
+                {
+                    OpcStatus = "Not connected";
+                }
                 IsConnecting = false;
+                StatusChanged?.Invoke();
             }
         }
     }
