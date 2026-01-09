@@ -24,6 +24,7 @@ namespace PlcLab.Web.ViewModel
         public string AddError { get; private set; } = string.Empty;
         public string SelectedEndpoint { get; set; }
 
+        public int OpcUaSessionKey { get; private set; } = 0;
         public IndexViewModel(IOpcUaClientFactory uaFactory, IConfiguration configuration, SeederHostedService seedService, NavigationManager navigationManager)
         {
             UaFactory = uaFactory;
@@ -144,6 +145,7 @@ namespace PlcLab.Web.ViewModel
                 if (Session != null && Session.Connected)
                 {
                     OpcStatus = $"Connected (SessionId: {sessionId})";
+                    OpcUaSessionKey++; // Force re-render of OpcUaBrowser
                     Connected?.Invoke();
                 }
                 else if (connectFailed)

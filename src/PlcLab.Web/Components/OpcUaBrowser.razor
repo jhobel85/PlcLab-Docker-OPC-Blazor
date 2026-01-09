@@ -1,9 +1,10 @@
 @using Opc.Ua
 @using Opc.Ua.Client
 @using PlcLab.OPC
+@using PlcLab.Web.ViewModel
 @inject IOpcUaClientFactory UaFactory
 
-@if (Session == null)
+@if (ViewModel?.Session == null)
 {
     <div class="alert alert-warning">Not connected to OPC UA server.</div>
 }
@@ -55,8 +56,7 @@ else
 }
 
 @code {
-    [Parameter] public Session? Session { get; set; }
-
+    [Parameter] public IndexViewModel? ViewModel { get; set; }
 
     private ReferenceDescriptionCollection? RootNodes;
     private ReferenceDescriptionCollection? ChildNodes;
@@ -64,12 +64,41 @@ else
     private string? ErrorMessage;
     private Session? _prevSession;
 
+    protected override void OnInitialized()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.StatusChanged += OnStatusChanged;
+        }
+    }
+
+    private async void OnStatusChanged()
+    {
+        var session = ViewModel?.Session;
+        if (session != _prevSession)
+        {
+            _prevSession = session;
+            if (session != null)
+            {
+                await LoadRoot();
+            }
+            else
+            {
+                RootNodes = null;
+                ChildNodes = null;
+                SelectedNode = null;
+            }
+        }
+        StateHasChanged();
+    }
+
     protected override async Task OnParametersSetAsync()
     {
-        if (Session != _prevSession)
+        var session = ViewModel?.Session;
+        if (session != _prevSession)
         {
-            _prevSession = Session;
-            if (Session != null)
+            _prevSession = session;
+            if (session != null)
             {
                 await LoadRoot();
             }
@@ -82,14 +111,14 @@ else
         }
     }
 
-
     private async Task LoadRoot()
     {
         ErrorMessage = null;
-        if (Session == null) return;
+        var session = ViewModel?.Session;
+        if (session == null) return;
         try
         {
-            RootNodes = await UaFactory.BrowseAsync(Session, ObjectIds.ObjectsFolder);
+            RootNodes = await UaFactory.BrowseAsync(session, ObjectIds.ObjectsFolder);
             SelectedNode = null;
             ChildNodes = null;
         }
@@ -100,15 +129,15 @@ else
         StateHasChanged();
     }
 
-
     private async Task LoadChildren(ReferenceDescription node)
     {
         ErrorMessage = null;
-        if (Session == null) return;
+        var session = ViewModel?.Session;
+        if (session == null) return;
         try
         {
-            var nodeId = ExpandedNodeId.ToNodeId(node.NodeId, Session.NamespaceUris);
-            ChildNodes = await UaFactory.BrowseAsync(Session, nodeId);
+            var nodeId = ExpandedNodeId.ToNodeId(node.NodeId, session.NamespaceUris);
+            ChildNodes = await UaFactory.BrowseAsync(session, nodeId);
         }
         catch (Exception ex)
         {

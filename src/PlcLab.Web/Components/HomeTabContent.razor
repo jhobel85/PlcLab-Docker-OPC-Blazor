@@ -87,10 +87,6 @@
     <LiveSignals Session="@(ViewModel?.Session)" />
 </div>
 
-<div class="mt-4">
-    <RunWizard />
-</div>
-
 @if (ViewModel?.Session != null && ViewModel.Session.Connected)
 {
     <div class="alert alert-info mt-3">
