@@ -1,152 +1,37 @@
-@rendermode @(new InteractiveServerRenderMode())
 @page "/"
-@using PlcLab.OPC
-@using PlcLab.Web.Pages
-@using PlcLab.Infrastructure
+@rendermode @(new InteractiveServerRenderMode())
 @using PlcLab.Web.Components
-@using Microsoft.AspNetCore.Components.Web
-@using Microsoft.JSInterop
-@using PlcLab.Web.ViewModel
-@inject NavigationManager NavigationManager
+@inject PlcLab.Web.ViewModel.IndexViewModel _vm
+
+<div>
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <button type="button" class="nav-link @(activeTab == "home" ? "active" : "")" @onclick='() => SetTab("home")'>Home</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link @(activeTab == "opcua" ? "active" : "")" @onclick='() => SetTab("opcua")'>OPC UA Browser</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link @(activeTab == "results" ? "active" : "")" @onclick='() => SetTab("results")'>Results Explorer</button>
+    </li>
+  </ul>
+  <div class="mt-3">
+    @if (activeTab == "home")
+    {
+      <HomeTabContent ViewModel="_vm" />
+    }
+    else if (activeTab == "opcua")
+    {
+      <OpcUaBrowser Session="@(_vm?.Session)" />
+    }
+    else if (activeTab == "results")
+    {
+      <ResultsExplorer />
+    }
+  </div>
+</div>
 
 @code {
-  @inject PlcLab.Web.ViewModel.IndexViewModel _vm
-    private double? _addMethodResult;
-    private string? _addMethodDebug;
-
-
-    protected override void OnInitialized()
-    {
-      if (_vm != null)
-      {
-        _vm.Connected += OnConnected;
-        _vm.StatusChanged += OnStatusChanged;
-      }
-    }
-
-    private async void OnConnected()
-    {
-      if (_vm != null)
-      {
-        await _vm.LoadSeedInfoAsync();
-        await FetchAddMethodResultAsync();
-        StateHasChanged();
-      }
-    }
-
-    private void OnStatusChanged()
-    {
-      if (_vm == null || _vm.Session == null || !_vm.Session.Connected)
-      {
-        _addMethodResult = null;
-        _addMethodDebug = null;
-        if (_vm != null) _vm.ClearSeedInfo();
-        StateHasChanged();
-      }
-    }
-
-    private async Task FetchAddMethodResultAsync()
-    {
-      _addMethodResult = null;
-      _addMethodDebug = null;
-      try
-      {
-        var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
-        var response = await http.GetAsync("api/seedinfo");
-        if (response.IsSuccessStatusCode)
-        {
-          var json = await response.Content.ReadAsStringAsync();
-          using var doc = System.Text.Json.JsonDocument.Parse(json);
-          if (doc.RootElement.TryGetProperty("result", out var resultElem) && resultElem.ValueKind != System.Text.Json.JsonValueKind.Null)
-            _addMethodResult = resultElem.GetDouble();
-          if (doc.RootElement.TryGetProperty("debug", out var debugElem))
-            _addMethodDebug = debugElem.GetString();
-        }
-      }
-      catch (Exception ex)
-      {
-        _addMethodDebug = $"Error fetching method result: {ex.Message}";
-      }
-    }
-
-    private async Task OnRefreshSeedData()
-    {
-        if (_vm != null)
-        {
-            await _vm.LoadSeedInfoAsync();
-            await FetchAddMethodResultAsync();
-            StateHasChanged();
-        }
-    }
-}
-
-
-<h4>Welcome to PlcLab</h4>
-<div>
-  <p>OPC UA application: @_vm?.UaFactory.GetApplicationName()</p>
-
-  <div class="d-flex align-items-center mb-2">
-    <span><strong>Click Count:</strong> @(_vm?.ClickCount ?? 0) (test to verify component is interactive)</span>
-    <button class="btn btn-secondary ms-3" @onclick="() => _vm?.TestButtonClick()">Test Button</button>
-  </div>
-  </div>
-
-  <div class="mt-4">
-    <OpcUaBrowser Session="@(_vm?.Session)" />
-  </div>
-
-
-  <div class="mt-4">
-    <LiveSignals Session="@(_vm?.Session)" />
-  </div>
-
-  <div class="mt-4">
-    <RunWizard />
-  </div>
-
-  <div class="mt-4">
-    <ResultsExplorer />
-  </div>
-
-@if (_vm?.Session != null && _vm.Session.Connected)
-{
-    <div class="alert alert-info mt-3">
-        <div class="d-flex align-items-center mb-2">
-            <strong>Static (Seed) Data :</strong>
-            <button class="btn btn-sm btn-outline-secondary ms-3" @onclick="OnRefreshSeedData" title="Refresh Seed Data">
-                <span class="bi-arrow-clockwise"></span> Refresh
-            </button>
-        </div>
-        @if (_vm?.SeedInfo?.Variables?.Count > 0)
-        {
-            <ul>
-                @foreach (var v in _vm.SeedInfo.Variables)
-                {
-                    <li>
-                        <b>@v.Label</b> (<code>@v.NodeId</code>): <span>@v.Value</span>
-                    </li>
-                }
-                @if (_addMethodResult != null || !string.IsNullOrEmpty(_addMethodDebug))
-                {
-                    <li class="mt-2">
-                        <div class="ms-3 text-muted">Method 'Add' result: <b>@_addMethodResult</b></div>
-                        @if (!string.IsNullOrEmpty(_addMethodDebug))
-                        {
-                            <div class="ms-3 small">@_addMethodDebug</div>
-                        }
-                    </li>
-                }
-            </ul>
-        }
-        else
-        {
-            <span>No demo variables found or OPC UA server not reachable.</span>
-        }
-    </div>
-}
-else
-{
-    <div class="alert alert-warning mt-3">
-        No OPC UA session. Please connect to see static (seed) data.
-    </div>
+    private string activeTab = "home";
+    private void SetTab(string tab) => activeTab = tab;
 }

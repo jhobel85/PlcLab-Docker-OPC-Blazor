@@ -12,6 +12,10 @@ else
     <div>
         <h5>OPC UA Browser</h5>
         <button class="btn btn-sm btn-outline-primary mb-2" @onclick="LoadRoot">Browse Root</button>
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger">@ErrorMessage</div>
+        }
         @if (RootNodes == null)
         {
             <div>Loading...</div>
@@ -52,32 +56,64 @@ else
 
 @code {
     [Parameter] public Session? Session { get; set; }
+
+
     private ReferenceDescriptionCollection? RootNodes;
     private ReferenceDescriptionCollection? ChildNodes;
     private ReferenceDescription? SelectedNode;
+    private string? ErrorMessage;
+    private Session? _prevSession;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Session != null && RootNodes == null)
+        if (Session != _prevSession)
         {
-            await LoadRoot();
+            _prevSession = Session;
+            if (Session != null)
+            {
+                await LoadRoot();
+            }
+            else
+            {
+                RootNodes = null;
+                ChildNodes = null;
+                SelectedNode = null;
+            }
         }
     }
 
+
     private async Task LoadRoot()
     {
+        ErrorMessage = null;
         if (Session == null) return;
-        RootNodes = await UaFactory.BrowseAsync(Session, ObjectIds.ObjectsFolder);
-        SelectedNode = null;
-        ChildNodes = null;
+        try
+        {
+            RootNodes = await UaFactory.BrowseAsync(Session, ObjectIds.ObjectsFolder);
+            SelectedNode = null;
+            ChildNodes = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Browse Root failed: {ex.GetType().Name} - {ex.Message}";
+        }
         StateHasChanged();
     }
 
+
     private async Task LoadChildren(ReferenceDescription node)
     {
+        ErrorMessage = null;
         if (Session == null) return;
-        var nodeId = ExpandedNodeId.ToNodeId(node.NodeId, Session.NamespaceUris);
-        ChildNodes = await UaFactory.BrowseAsync(Session, nodeId);
+        try
+        {
+            var nodeId = ExpandedNodeId.ToNodeId(node.NodeId, Session.NamespaceUris);
+            ChildNodes = await UaFactory.BrowseAsync(Session, nodeId);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Browse Children failed: {ex.GetType().Name} - {ex.Message}";
+        }
         StateHasChanged();
     }
 
