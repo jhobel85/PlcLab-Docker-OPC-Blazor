@@ -1,4 +1,5 @@
 using PlcLab.Infrastructure;
+using PlcLab.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Opc.Ua;
 using PlcLab.OPC;
@@ -23,6 +24,7 @@ builder.Services.AddAntiforgery();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
 builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
+builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscriptionService>();
 // Register demo data seeder hosted service and as injectable singleton
 builder.Services.AddScoped<IndexViewModel>();
 builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();

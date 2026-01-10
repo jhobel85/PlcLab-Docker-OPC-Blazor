@@ -152,6 +152,12 @@ namespace PlcLab.OPC
     // Browsing
     public async Task<NodeId> ResolveNodeIdAsync(Session session, string path, CancellationToken ct = default)
     {
+      // Short-circuit when a full NodeId string (e.g., "ns=6;s=Scalar_Static_Boolean") is provided
+      if (NodeId.TryParse(path, out var parsedNodeId))
+      {
+        return parsedNodeId;
+      }
+
       var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
       var currentId = ObjectIds.RootFolder;
 
@@ -212,7 +218,7 @@ namespace PlcLab.OPC
         AttributeId = Attributes.Value,
         MonitoringMode = MonitoringMode.Reporting,
         SamplingInterval = 1000,
-        QueueSize = 0,
+        QueueSize = 1,
         DiscardOldest = true
       };
 

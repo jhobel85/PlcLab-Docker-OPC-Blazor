@@ -51,7 +51,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 ## 6) Blazor UI
 - [X] **Endpoint Switcher** (Virtual PLC / In‑process mock)
 - [x] **OPC UA Browser** (tree view, node details, read/write)
-- [ ] **Live Signals** (subscriptions with list/chart)
+- [x] **Live Signals** (subscriptions with list/chart)
 - [ ] **Run Wizard** (select TestPlan → execute → show progress)
 - [ ] **Results Explorer** (filters, table, details, CSV/PDF export)
 - [ ] Theme: basic CSS or MudBlazor (if allowed)

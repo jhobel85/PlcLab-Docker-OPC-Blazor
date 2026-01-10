@@ -83,10 +83,6 @@
   </div>
 </div>
 
-<div class="mt-4">
-    <LiveSignals Session="@(ViewModel?.Session)" />
-</div>
-
 @if (ViewModel?.Session != null && ViewModel.Session.Connected)
 {
     <div class="alert alert-info mt-3">
@@ -129,3 +125,7 @@ else
         No OPC UA session. Please connect to see static (seed) data.
     </div>
 }
+
+<div class="mt-4">
+    <LiveSignals Session="@(ViewModel?.Session)" />
+</div>

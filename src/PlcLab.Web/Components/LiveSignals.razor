@@ -1,7 +1,5 @@
 @using Opc.Ua
 @using Opc.Ua.Client
-@using PlcLab.OPC
-@inject IOpcUaClientFactory UaFactory
 
 @if (Session == null)
 {
@@ -12,7 +10,11 @@ else
     <div>
         <h5>Live Signals</h5>
         <button class="btn btn-sm btn-outline-primary mb-2" @onclick="SubscribeToSignals" disabled="@IsSubscribed">Subscribe</button>
-        <button class="btn btn-sm btn-outline-secondary mb-2 ms-2" @onclick="Unsubscribe" disabled="@(!IsSubscribed)">Unsubscribe</button>
+        <button class="btn btn-sm btn-outline-secondary mb-2 ms-2" @onclick="UnsubscribeAsync" disabled="@(!IsSubscribed)">Unsubscribe</button>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert alert-danger py-1 my-2">@ErrorMessage</div>
+        }
         @if (SignalValues.Count == 0)
         {
             <div>No signals yet.</div>
@@ -38,53 +40,3 @@ else
     </div>
 }
 
-@code {
-    [Parameter] public Session? Session { get; set; }
-    private Subscription? Subscription;
-    private bool IsSubscribed;
-    private Dictionary<string, (object? Value, DateTime Timestamp)> SignalValues = new();
-    private List<(string label, string path)> DemoSignals = new()
-    {
-        ("Process/State", "ReferenceTest/Scalar/Scalar_Static/Boolean"),
-        ("Analog/Flow", "ReferenceTest/Scalar/Scalar_Static/Double"),
-        ("Digital/ValveOpen", "ReferenceTest/Scalar/Scalar_Static/Boolean")
-    };
-
-    protected override void OnParametersSet()
-    {
-        if (Session == null)
-        {
-            Unsubscribe();
-        }
-    }
-
-    private async Task SubscribeToSignals()
-    {
-        if (Session == null || IsSubscribed) return;
-        Subscription = await UaFactory.CreateSubscriptionAsync(Session);
-        foreach (var (label, path) in DemoSignals)
-        {
-            var nodeId = await UaFactory.ResolveNodeIdAsync(Session, path);
-            await UaFactory.AddMonitoredItemAsync(Subscription, nodeId, (item, args) =>
-            {
-                var value = args.NotificationValue as Opc.Ua.DataValue;
-                SignalValues[label] = (value?.Value, value?.SourceTimestamp ?? DateTime.UtcNow);
-                InvokeAsync(StateHasChanged);
-            });
-        }
-        IsSubscribed = true;
-        StateHasChanged();
-    }
-
-    private async void Unsubscribe()
-    {
-        if (Subscription != null)
-        {
-            await Subscription.DeleteAsync(true);
-            Subscription = null;
-        }
-        IsSubscribed = false;
-        SignalValues.Clear();
-        StateHasChanged();
-    }
-}
