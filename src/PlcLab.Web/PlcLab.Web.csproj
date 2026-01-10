@@ -13,6 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>        
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />        
     <ProjectReference Include="..\PlcLab.OPC\PlcLab.OPC.csproj" />
     <ProjectReference Include="..\PlcLab.Domain\PlcLab.Domain.csproj" />
     <ProjectReference Include="..\PlcLab.Application\PlcLab.Application.csproj" />

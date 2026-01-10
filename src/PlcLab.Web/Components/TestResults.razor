@@ -1,10 +1,6 @@
 @using System.Globalization
 
-<div class="mt-4">
-    <RunWizard />
-</div>
-
-<h5>Results Explorer</h5>
+<h5>Test Result Explorer</h5>
 <div class="mb-2">
     <input class="form-control w-auto d-inline-block" style="width:200px" placeholder="Filter by plan..." @bind="Filter" />
     <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ExportCsv">Export CSV</button>
@@ -60,13 +56,21 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: Replace with real API call
-        await Task.Delay(200);
-        Results = new List<Result>
+        try
         {
-            new Result { PlanName = "Demo Plan 1", RunDate = DateTime.Now.AddDays(-1), Status = "Passed", Summary = "All tests passed." },
-            new Result { PlanName = "Demo Plan 2", RunDate = DateTime.Now.AddDays(-2), Status = "Failed", Summary = "2 tests failed." }
-        };
+            // TODO: Replace with real API call
+            await Task.Delay(200);
+            Results = new List<Result>
+            {
+                new Result { PlanName = "Demo Plan 1", RunDate = DateTime.Now.AddDays(-1), Status = "Passed", Summary = "All tests passed." },
+                new Result { PlanName = "Demo Plan 2", RunDate = DateTime.Now.AddDays(-2), Status = "Failed", Summary = "2 tests failed." }
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to load test results: {ex.Message}");
+            Results = new();
+        }
     }
 
     private void ShowDetails(Result r)

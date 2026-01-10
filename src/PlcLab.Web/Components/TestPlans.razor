@@ -1,0 +1,173 @@
+@using PlcLab.Domain
+@inject NavigationManager Navigation
+@inject IHttpClientFactory HttpFactory
+
+<h3>Test Plans</h3>
+
+<div class="mt-4">
+    <RunWizard />
+</div>
+
+@if (IsLoading)
+{
+    <div>Loading...</div>
+}
+else
+{
+    <button class="btn btn-primary mb-2" @onclick="ShowAddPlan">Add Test Plan</button>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Cases</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var plan in Plans)
+            {
+                <tr>
+                    <td>@plan.Name</td>
+                    <td>@plan.TestCases.Count</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary me-1" @onclick="() => EditPlan(plan)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeletePlan(plan)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (ShowPlanDialog)
+{
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((EditingPlan?.Id == Guid.Empty) ? "Add Test Plan" : "Edit Test Plan")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" placeholder="Plan Name" @bind="EditingPlan!.Name" />
+                    <h6>Test Cases</h6>
+                    <ul class="list-group mb-2">
+                        @foreach (var tc in EditingPlan!.TestCases)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@tc.Name</span>
+                                <button class="btn btn-sm btn-danger" @onclick="() => RemoveCase(tc)">Remove</button>
+                            </li>
+                        }
+                    </ul>
+                    <input class="form-control mb-2" placeholder="New Case Name" @bind="NewCaseName" />
+                    <button class="btn btn-sm btn-outline-primary" @onclick="AddCase">Add Case</button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SavePlan">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    private List<TestPlan> Plans = new();
+    private bool IsLoading = true;
+    private bool ShowPlanDialog = false;
+    private TestPlan? EditingPlan;
+    private string NewCaseName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPlans();
+    }
+
+    private async Task LoadPlans()
+    {
+        IsLoading = true;
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            var plans = await client.GetFromJsonAsync<List<TestPlan>>("api/testplans");
+            Plans = plans ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to load test plans: {ex.Message}");
+            Plans = new();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ShowAddPlan()
+    {
+        EditingPlan = new TestPlan { Id = Guid.Empty, Name = string.Empty, TestCases = new() };
+        ShowPlanDialog = true;
+        NewCaseName = string.Empty;
+    }
+
+    private void EditPlan(TestPlan plan)
+    {
+        EditingPlan = new TestPlan
+        {
+            Id = plan.Id,
+            Name = plan.Name,
+            TestCases = plan.TestCases.Select(tc => new TestCase { Id = tc.Id, Name = tc.Name }).ToList()
+        };
+        ShowPlanDialog = true;
+        NewCaseName = string.Empty;
+    }
+
+    private void CloseDialog()
+    {
+        ShowPlanDialog = false;
+        EditingPlan = null;
+        NewCaseName = string.Empty;
+    }
+
+    private void AddCase()
+    {
+        if (!string.IsNullOrWhiteSpace(NewCaseName) && EditingPlan != null)
+        {
+            EditingPlan.TestCases.Add(new TestCase { Id = Guid.NewGuid(), Name = NewCaseName });
+            NewCaseName = string.Empty;
+        }
+    }
+
+    private void RemoveCase(TestCase tc)
+    {
+        EditingPlan?.TestCases.Remove(tc);
+    }
+
+    private async Task SavePlan()
+    {
+        if (EditingPlan == null) return;
+        if (EditingPlan.Id == Guid.Empty)
+        {
+            // New plan
+            var client = HttpFactory.CreateClient("Api");
+            await client.PostAsJsonAsync("api/testplans", EditingPlan);
+        }
+        else
+        {
+            // Update
+            var client = HttpFactory.CreateClient("Api");
+            await client.PutAsJsonAsync($"api/testplans/{EditingPlan.Id}", EditingPlan);
+        }
+        ShowPlanDialog = false;
+        await LoadPlans();
+    }
+
+    private async Task DeletePlan(TestPlan plan)
+    {
+        var client = HttpFactory.CreateClient("Api");
+        await client.DeleteAsync($"api/testplans/{plan.Id}");
+        await LoadPlans();
+    }
+}

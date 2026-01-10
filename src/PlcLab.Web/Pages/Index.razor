@@ -12,8 +12,12 @@
       <button type="button" class="nav-link @(activeTab == "opcua" ? "active" : "")" @onclick='() => SetTab("opcua")'>OPC UA Browser</button>
     </li>
     <li class="nav-item">
-      <button type="button" class="nav-link @(activeTab == "tests" ? "active" : "")" @onclick='() => SetTab("tests")'>Tests Explorer</button>
+      <button type="button" class="nav-link @(activeTab == "results" ? "active" : "")" @onclick='() => SetTab("results")'>Test Results</button>
     </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link @(activeTab == "plans" ? "active" : "")" @onclick='() => SetTab("plans")'>Test Plans</button>
+    </li>
+
   </ul>
   <div class="mt-3">
     @if (activeTab == "home")
@@ -24,9 +28,13 @@
     {
       <OpcUaBrowser ViewModel="_vm" />
     }
-    else if (activeTab == "tests")
+    else if (activeTab == "results")
     {
-      <TestsExplorer />
+      <TestResults />
+    }
+    else if (activeTab == "plans")
+    {
+      <TestPlans />
     }
   </div>
 </div>

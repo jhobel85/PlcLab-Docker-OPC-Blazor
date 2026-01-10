@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlcLab.Infrastructure;
@@ -11,9 +12,11 @@ using PlcLab.Infrastructure;
 namespace PlcLab.Infrastructure.Migrations
 {
     [DbContext(typeof(PlcLabDbContext))]
-    partial class PlcLabDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260110174129_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

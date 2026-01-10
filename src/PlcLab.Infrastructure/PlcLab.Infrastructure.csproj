@@ -13,6 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <ProjectReference Include="..\PlcLab.OPC\PlcLab.OPC.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
@@ -21,4 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="..\PlcLab.Domain\PlcLab.Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup> <Compile Remove="Migrations_Backup\**\*.cs" /> </ItemGroup>
 </Project>

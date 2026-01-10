@@ -1,3 +1,4 @@
+using PlcLab.Web.Api;
 using PlcLab.Infrastructure;
 using PlcLab.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,37 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 // Add SQL Server DbContext
+// Add PostgreSQL DbContext
 builder.Services.AddDbContext<PlcLabDbContext>(options =>
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Host.UseSerilog(); // Use Serilog for logging
 builder.Services.AddAntiforgery();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddHttpClient("Api", client =>
+{
+    // Set the base address for API calls (robust fallback)
+    static bool TryGetValidUri(string? value, out Uri? uri)
+    {
+        // Reject null/whitespace and wildcards like "+" or "*" (common in ASPNETCORE_URLS)
+        if (string.IsNullOrWhiteSpace(value) || value.Contains("+") || value.Contains("*"))
+        {
+            uri = null;
+            return false;
+        }
+
+        return Uri.TryCreate(value, UriKind.Absolute, out uri) && !string.IsNullOrWhiteSpace(uri.Host);
+    }
+
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
+    var aspnetcoreUrls = builder.Configuration["ASPNETCORE_URLS"];
+
+    if (!TryGetValidUri(apiBaseUrl, out var baseUri) && !TryGetValidUri(aspnetcoreUrls, out baseUri))
+    {
+        baseUri = new Uri("http://localhost:8080/");
+    }
+
+    client.BaseAddress = baseUri!;
+});
 builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
 builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
 builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscriptionService>();
@@ -37,8 +64,16 @@ builder.Services.AddSingleton<ConnectionStatusService>();
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
 var app = builder.Build();
-// Register API endpoint for seed info
+
+// Automatically apply EF Core migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<PlcLab.Infrastructure.PlcLabDbContext>();
+    db.Database.Migrate();
+}
+// Register API endpoints
 SeedInfoApi.MapSeedInfoEndpoint(app);
+TestPlansApi.MapTestPlansApi(app);
 app.UseHttpsRedirection();
 //app.UseAuthentication();
 //app.UseAuthorization();
