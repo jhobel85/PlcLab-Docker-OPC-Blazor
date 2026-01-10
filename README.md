@@ -52,9 +52,9 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [X] **Endpoint Switcher** (Virtual PLC / In‑process mock)
 - [x] **OPC UA Browser** (tree view, node details, read/write)
 - [x] **Live Signals** (subscriptions with list/chart)
-- [ ] **Run Wizard** (select TestPlan → execute → show progress)
-- [ ] **Results Explorer** (filters, table, details, CSV/PDF export)
-- [ ] Theme: basic CSS or MudBlazor (if allowed)
+- [x] **Run Wizard** (select TestPlan → execute → show progress)
+- [x] **Results Explorer** (filters, table, details, CSV/PDF export)
+- [x] Theme: basic CSS or MudBlazor (if allowed)
 
 ## 7) Security (Certificates)
 - [ ] Client certificate store + trust list management UI

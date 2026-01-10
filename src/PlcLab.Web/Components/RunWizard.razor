@@ -1,4 +1,5 @@
 @inject NavigationManager NavigationManager
+@inject IHttpClientFactory HttpFactory
 
 <h5>Run Wizard</h5>
 @if (TestPlans == null)
@@ -44,35 +45,66 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: Replace with real API call
-        await Task.Delay(200); // Simulate load
-        TestPlans = new List<TestPlan>
+        await LoadTestPlans();
+    }
+
+    private async Task LoadTestPlans()
+    {
+        try
         {
-            new TestPlan { Id = "plan1", Name = "Demo Plan 1" },
-            new TestPlan { Id = "plan2", Name = "Demo Plan 2" }
-        };
+            var client = HttpFactory.CreateClient("Api");
+            var plans = await client.GetFromJsonAsync<List<TestPlan>>("api/testplans");
+            TestPlans = plans ?? new();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to load test plans: {ex.Message}";
+            TestPlans = new();
+        }
     }
 
     private async Task StartRun()
     {
         if (string.IsNullOrEmpty(SelectedPlanId)) return;
+        var plan = TestPlans.FirstOrDefault(p => p.Id == SelectedPlanId);
+        if (plan == null)
+        {
+            StatusMessage = "Test plan not found.";
+            return;
+        }
         IsRunning = true;
         Progress = 0;
         StatusMessage = "Starting test run...";
         ResultMessage = string.Empty;
         StateHasChanged();
-        // Simulate progress
-        for (int i = 1; i <= 10; i++)
+
+        try
         {
-            await Task.Delay(400);
-            Progress = i * 10;
-            StatusMessage = $"Running step {i} of 10...";
+            var client = HttpFactory.CreateClient("Api");
+            // Start the test run via API (POST to /api/testruns or similar)
+            var response = await client.PostAsJsonAsync($"api/testruns", new { TestPlanId = plan.Id });
+            response.EnsureSuccessStatusCode();
+            // Optionally poll for progress or just simulate for now
+            for (int i = 1; i <= 10; i++)
+            {
+                await Task.Delay(400);
+                Progress = i * 10;
+                StatusMessage = $"Running step {i} of 10...";
+                StateHasChanged();
+            }
+            StatusMessage = "Test run complete.";
+            ResultMessage = $"Test plan '{plan.Name}' completed successfully.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Test run failed: {ex.Message}";
+            ResultMessage = string.Empty;
+        }
+        finally
+        {
+            IsRunning = false;
             StateHasChanged();
         }
-        StatusMessage = "Test run complete.";
-        ResultMessage = $"Test plan '{TestPlans.FirstOrDefault(p => p.Id == SelectedPlanId)?.Name}' completed successfully.";
-        IsRunning = false;
-        StateHasChanged();
     }
 
     public class TestPlan

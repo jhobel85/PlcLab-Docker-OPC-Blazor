@@ -74,6 +74,7 @@ using (var scope = app.Services.CreateScope())
 // Register API endpoints
 SeedInfoApi.MapSeedInfoEndpoint(app);
 TestPlansApi.MapTestPlansApi(app);
+TestRunsApi.MapTestRunsApi(app);
 app.UseHttpsRedirection();
 //app.UseAuthentication();
 //app.UseAuthorization();

@@ -4,6 +4,7 @@
 <div class="mb-2">
     <input class="form-control w-auto d-inline-block" style="width:200px" placeholder="Filter by plan..." @bind="Filter" />
     <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ExportCsv">Export CSV</button>
+    <button class="btn btn-sm btn-outline-primary ms-2" @onclick="RefreshData">Refresh</button>
 </div>
 @if (Results.Count == 0)
 {
@@ -56,21 +57,42 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await RefreshData();
+    }
+
+    [Inject] private IHttpClientFactory HttpFactory { get; set; } = default!;
+
+    private async Task RefreshData()
+    {
         try
         {
-            // TODO: Replace with real API call
-            await Task.Delay(200);
-            Results = new List<Result>
+            var client = HttpFactory.CreateClient("Api");
+            var runs = await client.GetFromJsonAsync<List<TestRunDto>>("api/testruns");
+            Results = runs?.Select(r => new Result
             {
-                new Result { PlanName = "Demo Plan 1", RunDate = DateTime.Now.AddDays(-1), Status = "Passed", Summary = "All tests passed." },
-                new Result { PlanName = "Demo Plan 2", RunDate = DateTime.Now.AddDays(-2), Status = "Failed", Summary = "2 tests failed." }
-            };
+                PlanName = r.PlanName,
+                RunDate = r.StartedAt.ToLocalTime(),
+                Status = r.EndedAt == null ? "Running" : (r.Results.All(x => x.Passed) ? "Passed" : "Failed"),
+                Summary = $"{r.Results.Count(x => x.Passed)} passed, {r.Results.Count(x => !x.Passed)} failed"
+            }).ToList() ?? new();
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Failed to load test results: {ex.Message}");
             Results = new();
         }
+    }
+
+    public class TestRunDto
+    {
+        public string PlanName { get; set; } = string.Empty;
+        public DateTime StartedAt { get; set; }
+        public DateTime? EndedAt { get; set; }
+        public List<TestResultDto> Results { get; set; } = new();
+    }
+    public class TestResultDto
+    {
+        public bool Passed { get; set; }
     }
 
     private void ShowDetails(Result r)

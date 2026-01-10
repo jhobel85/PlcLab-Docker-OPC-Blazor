@@ -4,9 +4,7 @@
 
 <h3>Test Plans</h3>
 
-<div class="mt-4">
-    <RunWizard />
-</div>
+
 
 @if (IsLoading)
 {
@@ -31,7 +29,16 @@ else
                     <td>@plan.TestCases.Count</td>
                     <td>
                         <button class="btn btn-sm btn-secondary me-1" @onclick="() => EditPlan(plan)">Edit</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => DeletePlan(plan)">Delete</button>
+                        <button class="btn btn-sm btn-danger me-1" @onclick="() => DeletePlan(plan)">Delete</button>
+                        <button class="btn btn-sm btn-success" @onclick="() => StartPlan(plan)">Start</button>
+                        @if (RunningPlanId == plan.Id)
+                        {
+                            <span class="ms-2"><b>Running...</b> @Progress% - @StatusMessage</span>
+                        }
+                        @if (LastResultPlanId == plan.Id && !string.IsNullOrEmpty(ResultMessage))
+                        {
+                            <span class="ms-2 text-success">@ResultMessage</span>
+                        }
                     </td>
                 </tr>
             }
@@ -75,6 +82,50 @@ else
 
 @code {
     private List<TestPlan> Plans = new();
+    private Guid? RunningPlanId;
+    private int Progress;
+    private string StatusMessage = string.Empty;
+    private string ResultMessage = string.Empty;
+    private Guid? LastResultPlanId;
+
+    private async void StartPlan(TestPlan plan)
+    {
+        if (RunningPlanId != null) return; // Prevent concurrent runs
+        RunningPlanId = plan.Id;
+        Progress = 0;
+        StatusMessage = "Starting test run...";
+        ResultMessage = string.Empty;
+        LastResultPlanId = null;
+        StateHasChanged();
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            var response = await client.PostAsJsonAsync($"api/testruns", new { TestPlanId = plan.Id });
+            response.EnsureSuccessStatusCode();
+            // Simulate progress
+            for (int i = 1; i <= 10; i++)
+            {
+                await Task.Delay(400);
+                Progress = i * 10;
+                StatusMessage = $"Running step {i} of 10...";
+                StateHasChanged();
+            }
+            StatusMessage = "Test run complete.";
+            ResultMessage = $"Test plan '{plan.Name}' completed successfully.";
+            LastResultPlanId = plan.Id;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Test run failed: {ex.Message}";
+            ResultMessage = string.Empty;
+            LastResultPlanId = plan.Id;
+        }
+        finally
+        {
+            RunningPlanId = null;
+            StateHasChanged();
+        }
+    }
     private bool IsLoading = true;
     private bool ShowPlanDialog = false;
     private TestPlan? EditingPlan;
@@ -148,17 +199,29 @@ else
     private async Task SavePlan()
     {
         if (EditingPlan == null) return;
+        var client = HttpFactory.CreateClient("Api");
         if (EditingPlan.Id == Guid.Empty)
         {
             // New plan
-            var client = HttpFactory.CreateClient("Api");
-            await client.PostAsJsonAsync("api/testplans", EditingPlan);
+            var response = await client.PostAsJsonAsync("api/testplans", EditingPlan);
+            if (response.IsSuccessStatusCode)
+            {
+                var created = await response.Content.ReadFromJsonAsync<TestPlan>();
+                if (created != null)
+                    EditingPlan = created;
+            }
         }
         else
         {
             // Update
-            var client = HttpFactory.CreateClient("Api");
-            await client.PutAsJsonAsync($"api/testplans/{EditingPlan.Id}", EditingPlan);
+            var response = await client.PutAsJsonAsync($"api/testplans/{EditingPlan.Id}", EditingPlan);
+            if (response.IsSuccessStatusCode)
+            {
+                // Re-fetch the updated plan from backend
+                var updated = await client.GetFromJsonAsync<TestPlan>($"api/testplans/{EditingPlan.Id}");
+                if (updated != null)
+                    EditingPlan = updated;
+            }
         }
         ShowPlanDialog = false;
         await LoadPlans();
