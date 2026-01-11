@@ -1,21 +1,26 @@
-using Microsoft.AspNetCore.Components;
+using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Opc.Ua.Client;
-using PlcLab.OPC;
 using PlcLab.Infrastructure;
-using System.Diagnostics;
+using PlcLab.Web.Services;
 
 namespace PlcLab.Web.ViewModel
 {
     public class IndexViewModel
     {
-        private static readonly ActivitySource ActivitySource = new ActivitySource("PlcLab.Web.IndexViewModel");
-        public IOpcUaClientFactory UaFactory { get; }
-        public IConfiguration Configuration { get; }
-        public SeederHostedService SeedService { get; }
-        public NavigationManager NavigationManager { get; }
-        public string OpcStatus { get; private set; } = "Not connected";
-        public bool IsConnecting { get; private set; }
-        public Session? Session { get; private set; }
+        private const string DefaultEndpoint = "opc.tcp://opcua-refserver:50000";
+
+        private readonly IOpcConnectionService _connectionService;
+        private readonly ISeedDataClient _seedDataClient;
+        private readonly IConfiguration _configuration;
+        private int _lastObservedSessionVersion = -1;
+        private bool _initialized;
+
+        public string OpcStatus => _connectionService.Status;
+        public bool IsConnecting => _connectionService.IsConnecting;
+        public Session? Session => _connectionService.CurrentSession;
+        public string ClientApplicationName => _connectionService.ClientApplicationName;
         public int ClickCount { get; private set; }
         public SeedInfo? SeedInfo { get; private set; }
         public float AddNum1 { get; set; }
@@ -25,20 +30,26 @@ namespace PlcLab.Web.ViewModel
         public string SelectedEndpoint { get; set; }
 
         public int OpcUaSessionKey { get; private set; } = 0;
-        public IndexViewModel(IOpcUaClientFactory uaFactory, IConfiguration configuration, SeederHostedService seedService, NavigationManager navigationManager)
+        public IndexViewModel(
+            IOpcConnectionService connectionService,
+            ISeedDataClient seedDataClient,
+            IConfiguration configuration)
         {
-            UaFactory = uaFactory;
-            Configuration = configuration;
-            SeedService = seedService;
-            NavigationManager = navigationManager;
-            // Default to config value or Virtual PLC
-            SelectedEndpoint = configuration["OpcUa:Endpoint"] ?? "opc.tcp://opcua-refserver:50000";
+            _connectionService = connectionService;
+            _seedDataClient = seedDataClient;
+            _configuration = configuration;
+            SelectedEndpoint = configuration["OpcUa:Endpoint"] ?? DefaultEndpoint;
         }
 
         public async Task InitializeAsync()
         {
+            if (_initialized)
+            {
+                return;
+            }
+
+            _initialized = true;
             await TryConnectAsync();
-            await LoadSeedInfoAsync();
         }
 
         public async Task CallAddMethodAsync()
@@ -47,7 +58,7 @@ namespace PlcLab.Web.ViewModel
             AddError = string.Empty;
             try
             {
-                AddResult = await SeedService.CallMethodAsync<double>(Session, "Add", AddNum1, AddNum2);
+                AddResult = await _seedDataClient.InvokeAddAsync(Session, AddNum1, AddNum2);
                 if (AddResult == null)
                     AddError = "No result returned.";
             }
@@ -59,35 +70,30 @@ namespace PlcLab.Web.ViewModel
 
         public async Task LoadSeedInfoAsync()
         {
-            var variables = new List<SeedVariable>();
-            bool seedEnabled = true;
-            if (Session == null || !Session.Connected)
-            {
-                SeedInfo = new SeedInfo { SeedEnabled = false, Variables = new List<SeedVariable>() };
-                return;
-            }
             try
             {
-                var nodeIds = SeedDemoData.Variables.Select(v => new Opc.Ua.NodeId(v.NodeId)).ToList();
-                Opc.Ua.DataValue[]? values = null;
-                if (nodeIds.Count > 0)
-                {
-                    var readResult = await Session.ReadValuesAsync(nodeIds);
-                    values = readResult.Item1?.ToArray();
-                }
-                for (int i = 0; i < SeedDemoData.Variables.Length; i++)
-                {
-                    var label = SeedDemoData.Variables[i].Label;
-                    var nodeId = nodeIds[i].ToString();
-                    var value = values != null && i < values.Length ? values[i].Value : null;
-                    variables.Add(new SeedVariable { Label = label, NodeId = nodeId, Value = value?.ToString() ?? string.Empty });
-                }
+                SeedInfo = await _seedDataClient.LoadSeedInfoAsync(Session).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                variables.Add(new SeedVariable { Label = "Error", NodeId = "", Value = $"Error: {ex.Message}" });
+                SeedInfo = new SeedInfo
+                {
+                    SeedEnabled = false,
+                    Variables = new List<SeedVariable>
+                    {
+                        new SeedVariable
+                        {
+                            Label = "Error",
+                            NodeId = string.Empty,
+                            Value = ex.Message
+                        }
+                    }
+                };
             }
-            SeedInfo = new SeedInfo { SeedEnabled = seedEnabled, Variables = variables };
+            finally
+            {
+                StatusChanged?.Invoke();
+            }
         }
 
         public event Action? StatusChanged;
@@ -95,9 +101,7 @@ namespace PlcLab.Web.ViewModel
 
         public async Task ReconnectAsync()
         {
-            // Do not clear OpcStatus here; let TryConnectAsync update it after result is known
             await TryConnectAsync();
-            StatusChanged?.Invoke(); // Notify UI to update after reconnect
         }
 
         public void TestButtonClick()
@@ -107,63 +111,29 @@ namespace PlcLab.Web.ViewModel
 
         public async Task TryConnectAsync()
         {
-            var endpoint = SelectedEndpoint;
-            IsConnecting = true;
-            StatusChanged?.Invoke();
-            using var activity = ActivitySource.StartActivity("OpcUaConnect");
-            activity?.SetTag("opc.endpoint", endpoint);
-            bool connectFailed = false;
-            string? connectError = null;
-            try
-            {
-                if (Session != null)
-                {
-                    try
-                    {
-                        await Session.CloseAsync();
-                    }
-                    catch { }
-                    finally
-                    {
-                        Session.Dispose();
-                        Session = null;
-                    }
-                }
-                await Task.Delay(1000);
-                Session = await UaFactory.CreateSessionAsync(endpoint, useSecurity: false);
-            }
-            catch (Exception ex)
-            {
-                connectFailed = true;
-                connectError = ex.Message;
-                activity?.SetTag("error", true);
-                activity?.SetTag("exception.message", ex.Message);
-            }
-            finally
-            {
-                var sessionId = Session?.SessionId?.ToString() ?? "(unknown)";
-                if (Session != null && Session.Connected)
-                {
-                    OpcStatus = $"Connected (SessionId: {sessionId})";
-                    OpcUaSessionKey++; // Force re-render of OpcUaBrowser
-                    Connected?.Invoke();
-                }
-                else if (connectFailed)
-                {
-                    OpcStatus = $"Connection failed: {connectError}";
-                }
-                else
-                {
-                    OpcStatus = "Not connected";
-                }
-                IsConnecting = false;
-                StatusChanged?.Invoke();
-            }
+            await _connectionService.TryConnectAsync(SelectedEndpoint).ConfigureAwait(false);
+            await LoadSeedInfoAsync().ConfigureAwait(false);
+            ObserveSessionChanges();
         }
 
         public void ClearSeedInfo()
         {
             SeedInfo = null;
+        }
+
+        private void ObserveSessionChanges()
+        {
+            if (_connectionService.SessionVersion != _lastObservedSessionVersion)
+            {
+                _lastObservedSessionVersion = _connectionService.SessionVersion;
+                if (Session?.Connected == true)
+                {
+                    OpcUaSessionKey++;
+                    Connected?.Invoke();
+                }
+            }
+
+            StatusChanged?.Invoke();
         }
     }
 }

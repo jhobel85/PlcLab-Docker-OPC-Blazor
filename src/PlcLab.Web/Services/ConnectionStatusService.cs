@@ -1,63 +1,121 @@
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua.Client;
-using System;
+using PlcLab.OPC;
 using Serilog;
 
 namespace PlcLab.Web.Services
 {
-    public class ConnectionStatusService
+    public interface IOpcConnectionService
     {
+        Session? CurrentSession { get; }
+        string Status { get; }
+        bool IsConnecting { get; }
+        int SessionVersion { get; }
+        string ClientApplicationName { get; }
+        Task TryConnectAsync(string endpoint, CancellationToken cancellationToken = default);
+        Task CloseAsync();
+    }
+
+    public sealed class ConnectionStatusService : IOpcConnectionService, IAsyncDisposable
+    {
+        private static readonly ActivitySource ActivitySource = new("PlcLab.Web.ConnectionStatus");
+
+        private readonly IOpcUaClientFactory _opcFactory;
+        private readonly SemaphoreSlim _connectLock = new(1, 1);
+
         private Session? _currentSession;
         private string _status = "Not connected";
-        
-        public event Action? StatusChanged;
-        public event Func<Task>? ReconnectRequested;
+        private bool _isConnecting;
+        private int _sessionVersion;
 
-        public async Task RequestReconnectAsync()
+        public ConnectionStatusService(IOpcUaClientFactory opcFactory)
         {
-            Log.Information("[ConnectionStatusService] RequestReconnectAsync called");
-            if (ReconnectRequested != null)
+            _opcFactory = opcFactory;
+        }
+
+        public Session? CurrentSession => _currentSession;
+        public string Status => _status;
+        public bool IsConnecting => _isConnecting;
+        public int SessionVersion => _sessionVersion;
+        public string ClientApplicationName => _opcFactory.GetApplicationName();
+
+        public async Task TryConnectAsync(string endpoint, CancellationToken cancellationToken = default)
+        {
+            await _connectLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                Log.Information($"[ConnectionStatusService] Invoking {ReconnectRequested.GetInvocationList().Length} handler(s)");
-                foreach (var handler in ReconnectRequested.GetInvocationList())
-                {
-                    await ((Func<Task>)handler)();
-                }
+                await ConnectInternalAsync(endpoint, cancellationToken).ConfigureAwait(false);
             }
-            else
+            finally
             {
-                Log.Information("[ConnectionStatusService] No ReconnectRequested handlers subscribed!");
+                _connectLock.Release();
             }
         }
 
-        public Session? CurrentSession
+        public async Task CloseAsync()
         {
-            get => _currentSession;
-            set
+            await CloseCurrentSessionAsync().ConfigureAwait(false);
+        }
+
+        private async Task ConnectInternalAsync(string endpoint, CancellationToken cancellationToken)
+        {
+            _isConnecting = true;
+            using var activity = ActivitySource.StartActivity("OpcUaConnect");
+            activity?.SetTag("opc.endpoint", endpoint);
+
+            try
             {
-                if (_currentSession != value)
-                {
-                    _currentSession = value;
-                    OnStatusChanged();
-                }
+                await CloseCurrentSessionAsync().ConfigureAwait(false);
+
+                var session = await _opcFactory.CreateSessionAsync(endpoint, useSecurity: false, cancellationToken)
+                    .ConfigureAwait(false);
+
+                _currentSession = session;
+                _status = $"Connected (SessionId: {session.SessionId})";
+                _sessionVersion++;
+                Log.Information("[ConnectionStatusService] Connected to {Endpoint} with SessionId {SessionId}", endpoint, session.SessionId);
+            }
+            catch (Exception ex)
+            {
+                activity?.SetTag("error", true);
+                activity?.SetTag("exception.message", ex.Message);
+                _status = $"Connection failed: {ex.Message}";
+                Log.Error(ex, "[ConnectionStatusService] Failed to connect to {Endpoint}", endpoint);
+            }
+            finally
+            {
+                _isConnecting = false;
             }
         }
 
-        public string Status
+        private async Task CloseCurrentSessionAsync()
         {
-            get => _status;
-            set
+            if (_currentSession == null)
             {
-                if (_status != value)
-                {
-                    _status = value;
-                    OnStatusChanged();
-                }
+                return;
+            }
+
+            try
+            {
+                await _currentSession.CloseAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[ConnectionStatusService] Error closing OPC UA session");
+            }
+            finally
+            {
+                _currentSession.Dispose();
+                _currentSession = null;
             }
         }
 
-        private void OnStatusChanged()
+        public async ValueTask DisposeAsync()
         {
-            StatusChanged?.Invoke();
+            await CloseCurrentSessionAsync().ConfigureAwait(false);
+            _connectLock.Dispose();
         }
     }
 }

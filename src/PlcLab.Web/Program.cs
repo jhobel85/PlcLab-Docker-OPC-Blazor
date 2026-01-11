@@ -58,8 +58,8 @@ builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.SeederHostedService>());
 // Register OPC UA endpoint service as scoped - (if singleton we getannot consume scoped service 'Microsoft.JSInterop.IJSRuntime')
 builder.Services.AddScoped<OpcUaEndpointService>();
-// Register connection status service as singleton to share connection state across all pages
-builder.Services.AddSingleton<ConnectionStatusService>();
+builder.Services.AddSingleton<IOpcConnectionService, ConnectionStatusService>();
+builder.Services.AddScoped<ISeedDataClient, SeedDataClient>();
 
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
