@@ -54,6 +54,7 @@ builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
 builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscriptionService>();
 // Register demo data seeder hosted service and as injectable singleton
 builder.Services.AddScoped<IndexViewModel>();
+builder.Services.AddSingleton<PlcLab.Infrastructure.BrowseService>();
 builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.SeederHostedService>());
 builder.Services.AddScoped<OpcUaEndpointService>();

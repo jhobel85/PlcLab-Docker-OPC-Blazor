@@ -9,11 +9,18 @@ using Serilog;
 
 namespace PlcLab.Infrastructure
 {
-    public class SeederHostedService(IConfiguration configuration, IOpcUaClientFactory opcFactory) : IPlcService<Session, SeedInfo>
+    public class SeederHostedService : IPlcService<Session, SeedInfo>
     {
-        private readonly IConfiguration _configuration = configuration;
-        private readonly IOpcUaClientFactory _opcFactory = opcFactory;
-        private readonly BrowseService _browseService = new BrowseService(configuration, opcFactory);
+        private readonly IConfiguration _configuration;
+        private readonly IOpcUaClientFactory _opcFactory;
+        private readonly BrowseService _browseService;
+
+        public SeederHostedService(IConfiguration configuration, IOpcUaClientFactory opcFactory, BrowseService browseService)
+        {
+            _configuration = configuration;
+            _opcFactory = opcFactory;
+            _browseService = browseService;
+        }
 
         private SeedInfo? _seedInfo;
         private Session? _session;

@@ -37,14 +37,16 @@
         }
     }
 
+    [Inject] public IHttpClientFactory HttpFactory { get; set; } = default!;
+
     private async Task FetchAddMethodResultAsync()
     {
         _addMethodResult = null;
         _addMethodDebug = null;
         try
         {
-            var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
-            var response = await http.GetAsync("api/seedinfo");
+            var client = HttpFactory.CreateClient("Api");
+            var response = await client.GetAsync("api/seedinfo");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();

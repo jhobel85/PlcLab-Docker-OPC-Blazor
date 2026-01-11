@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 
 @inject IndexViewModel ViewModel
-@inject IJSRuntime JS
+@inject OpcUaEndpointService EndpointService
 
 @code {
     private async Task OnEndpointChanged(ChangeEventArgs e)
@@ -13,7 +13,8 @@
         if (e.Value is string endpoint)
         {
             ViewModel.SelectedEndpoint = endpoint;
-            await JS.InvokeVoidAsync("localStorage.setItem", "opcua-endpoint", endpoint);
+            EndpointService.Endpoint = endpoint;
+            await EndpointService.SaveToLocalStorage();
             await ReconnectAndUpdate();
         }
     }
