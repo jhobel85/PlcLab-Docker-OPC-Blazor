@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using PlcLab.Infrastructure;
 using PlcLab.Domain;
+using PlcLab.Application;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PlcLab.Web.Api
@@ -11,41 +14,25 @@ namespace PlcLab.Web.Api
     {
         public static void MapTestRunsApi(WebApplication app)
         {
-            app.MapPost("/api/testruns", async (TestRunRequest req, PlcLabDbContext db) =>
+            app.MapPost("/api/testruns", async (
+                TestRunRequest req,
+                PlcLabDbContext db,
+                IServiceProvider sp,
+                CancellationToken cancellationToken) =>
             {
                 // Validate TestPlan exists
                 var plan = await db.TestPlans.Include(p => p.TestCases).FirstOrDefaultAsync(p => p.Id == req.TestPlanId);
                 if (plan == null)
                     return Results.NotFound($"TestPlan {req.TestPlanId} not found");
 
-                // Create a new TestRun entity
-                var testRun = new TestRun
-                {
-                    Id = Guid.NewGuid(),
-                    TestPlanId = plan.Id,
-                    StartedAt = DateTime.UtcNow,
-                    EndedAt = null,
-                    Results = new()
-                };
-                // Add a TestResult for each TestCase (simulate pass)
-                foreach (var testCase in plan.TestCases)
-                {
-                    testRun.Results.Add(new TestResult
-                    {
-                        Id = Guid.NewGuid(),
-                        TestCaseId = testCase.Id,
-                        Passed = true,
-                        Message = "Simulated pass",
-                        Timestamp = DateTime.UtcNow
-                    });
-                }
-                db.TestRuns.Add(testRun);
-                await db.SaveChangesAsync();
+                var orchestrator = sp.GetRequiredService<TestRunOrchestrator>();
+                var config = sp.GetRequiredService<IConfiguration>(); // via appsettings.json
+                var opcUaSection = config.GetSection("OpcUa");
+                var endpoint = opcUaSection["Endpoint"] ?? opcUaSection["FallbackEndpoint"] ?? "opc.tcp://opcua-refserver:50000";
+                var testRun = await orchestrator.ExecuteTestPlanAsync(plan, endpoint, cancellationToken).ConfigureAwait(false);
 
-                // Simulate test execution (replace with real logic)
-                await Task.Delay(2000); // Simulate work
-                testRun.EndedAt = DateTime.UtcNow;
-                await db.SaveChangesAsync();
+                db.TestRuns.Add(testRun);
+                await db.SaveChangesAsync(cancellationToken);
 
                 return Results.Ok(new { testRun.Id, Status = "Completed" });
             });

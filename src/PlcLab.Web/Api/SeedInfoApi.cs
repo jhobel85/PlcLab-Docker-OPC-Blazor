@@ -1,7 +1,10 @@
-using Opc.Ua;
-using Opc.Ua.Client;
-using PlcLab.OPC;
-using  PlcLab.Infrastructure;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using PlcLab.Infrastructure;
+using PlcLab.Web.Services;
 
 namespace PlcLab.Web.Services;
 
@@ -9,31 +12,37 @@ public static class SeedInfoApi
 {
     public static void MapSeedInfoEndpoint(this WebApplication app)
     {
-        app.MapGet("/api/seedinfo", async (IConfiguration config, SeederHostedService seeder) =>
+        app.MapGet("/api/seedinfo", async (
+            IConfiguration config,
+            ISeedDataClient seedDataClient,
+            CancellationToken cancellationToken) =>
         {
             var seedEnabled = config.GetValue<bool>("Seed:Enabled");
             if (!seedEnabled)
-                return Results.Ok(new { seedEnabled, variables = Array.Empty<object>(), debug = "Seeding disabled" });
+            {
+                return Results.Ok(new { seedEnabled, variables = Array.Empty<object>(), result = (double?)null, debug = "Seeding disabled" });
+            }
 
-            // Ensure seeding has run (if needed)
-            var session = await seeder.GetSessionAsync(CancellationToken.None);
-            var seedInfo = await seeder.GetDataAsync(session, CancellationToken.None);
+            var seedInfo = await seedDataClient.LoadSeedInfoAsync(null, cancellationToken).ConfigureAwait(false);
+            if (!seedInfo.SeedEnabled)
+            {
+                return Results.Ok(new { seedEnabled = false, variables = Array.Empty<object>(), result = (double?)null, debug = "Seed info unavailable" });
+            }
+
             var valEnable = seedInfo.Variables.FirstOrDefault(v => v.Label == PlcLabConstants.Enable_Static);
             var boolValue = valEnable?.GetValue<bool>();
-
-            if (seedInfo == null)
-                return Results.Ok(new { seedEnabled, variables = Array.Empty<object>(), result = -1, debug = "SeedInfo not available in memory" });
             if (boolValue == false)
-                return Results.Ok(new { seedEnabled, variables = Array.Empty<object>(), result = -1, debug = "Add Function not enabled." });
+            {
+                return Results.Ok(new { seedEnabled = seedInfo.SeedEnabled, variables = seedInfo.Variables, result = (double?)null, debug = "Add Function not enabled." });
+            }
 
-            
             var valFloat = seedInfo.Variables.FirstOrDefault(v => v.Label == PlcLabConstants.Float_Static);
             var valUint = seedInfo.Variables.FirstOrDefault(v => v.Label == PlcLabConstants.Uint_Static);
             var floatValue = valFloat?.GetValue<float>() ?? 0;
             var uintValue = valUint?.GetValue<uint>() ?? 0;
-            var ret = await seeder.CallMethodAsync<double>(session, "Add", floatValue, uintValue);
+            var result = await seedDataClient.InvokeAddAsync(null, floatValue, uintValue, cancellationToken).ConfigureAwait(false);
 
-            return Results.Ok(new { seedEnabled = seedInfo.SeedEnabled, variables = seedInfo.Variables, result = ret, debug = "Loaded from SeederHostedService memory" });
+            return Results.Ok(new { seedEnabled = seedInfo.SeedEnabled, variables = seedInfo.Variables, result, debug = "Loaded via SeedDataClient" });
         });
     }
 }

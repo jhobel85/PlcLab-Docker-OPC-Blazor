@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua.Client;
@@ -22,7 +24,8 @@ namespace PlcLab.Web.Services
 
         public async Task<SeedInfo> LoadSeedInfoAsync(Session? session, CancellationToken cancellationToken = default)
         {
-            if (session == null || !session.Connected)
+            var effectiveSession = await EnsureSessionAsync(session, cancellationToken).ConfigureAwait(false);
+            if (effectiveSession == null)
             {
                 return new SeedInfo
                 {
@@ -31,17 +34,26 @@ namespace PlcLab.Web.Services
                 };
             }
 
-            return await _seeder.GetDataAsync(session, cancellationToken).ConfigureAwait(false);
+            return await _seeder.GetDataAsync(effectiveSession, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<double?> InvokeAddAsync(Session? session, float addend1, uint addend2, CancellationToken cancellationToken = default)
         {
-            if (session == null || !session.Connected)
+            var effectiveSession = await EnsureSessionAsync(session, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("Not connected to OPC UA server.");
+
+            return await _seeder.CallMethodAsync<double>(effectiveSession, "Add", addend1, addend2)
+                .ConfigureAwait(false);
+        }
+
+        private async Task<Session?> EnsureSessionAsync(Session? session, CancellationToken cancellationToken)
+        {
+            if (session != null && session.Connected)
             {
-                throw new InvalidOperationException("Not connected to OPC UA server.");
+                return session;
             }
 
-            return await _seeder.CallMethodAsync<double>(session, "Add", addend1, addend2).ConfigureAwait(false);
+            return await _seeder.GetSessionAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -56,10 +56,10 @@ builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscrip
 builder.Services.AddScoped<IndexViewModel>();
 builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.SeederHostedService>());
-// Register OPC UA endpoint service as scoped - (if singleton we getannot consume scoped service 'Microsoft.JSInterop.IJSRuntime')
 builder.Services.AddScoped<OpcUaEndpointService>();
 builder.Services.AddSingleton<IOpcConnectionService, ConnectionStatusService>();
 builder.Services.AddScoped<ISeedDataClient, SeedDataClient>();
+builder.Services.AddScoped<TestRunOrchestrator>();
 
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
