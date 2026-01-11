@@ -1,9 +1,0 @@
-=== SOLID Compliance Score ===
-
-SRP (Single Responsibility):     8 / 10
-OCP (Open/Closed):               6 / 10
-LSP (Liskov Substitution):       9 / 10
-ISP (Interface Segregation):     10 / 10
-DIP (Dependency Inversion):      10 / 10
-
-TOTAL SCORE:                     43 / 50
