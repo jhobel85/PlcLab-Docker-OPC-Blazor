@@ -1,0 +1,49 @@
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Application\TestRunOrchestrator.cs:6: public class TestRunOrchestrator
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\DomainEvents.cs:3: public abstract class DomainEvent
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\DomainEvents.cs:8: public class TestCaseStarted : DomainEvent
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\DomainEvents.cs:14: public class TestCasePassed : DomainEvent
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\DomainEvents.cs:20: public class TestCaseFailed : DomainEvent
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\TestCaseValidator.cs:3: public static class TestCaseValidator
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\TestEntities.cs:3: public class TestPlan
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\TestEntities.cs:10: public class TestCase
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\TestEntities.cs:18: public class TestRun
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\TestEntities.cs:27: public class TestResult
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Domain\TestEntities.cs:37: public class SignalSnapshot
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Migrations\20260110174129_InitialCreate.cs:9: public partial class InitialCreate : Migration
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Migrations\20260110174129_InitialCreate.Designer.cs:16: partial class InitialCreate
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Migrations\PlcLabDbContextModelSnapshot.cs:14: partial class PlcLabDbContextModelSnapshot : ModelSnapshot
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Migrations_Backup\20260104194312_InitialCreate.cs:9: public partial class InitialCreate : Migration
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Migrations_Backup\20260104194312_InitialCreate.Designer.cs:16: partial class InitialCreate
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Migrations_Backup\PlcLabDbContextModelSnapshot.cs:14: partial class PlcLabDbContextModelSnapshot : ModelSnapshot
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\BrowseService.cs:9: public class BrowseService(IConfiguration configuration, IOpcUaClientFactory opcFactory)
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\BrowseService.cs:23: if (child.NodeClass == NodeClass.Object || child.NodeClass == NodeClass.Variable || child.NodeClass == NodeClass.Method)
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\IPlcService.cs:7: /// Generic PLC service interface for fetching data and calling various methods of various types.
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\IPlcService.cs:9: public interface IPlcService<TSession, TData> : IHostedService
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\LiveSignalSubscriptionService.cs:7: public interface ILiveSignalSubscriptionService
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\LiveSignalSubscriptionService.cs:18: public class LiveSignalSubscriptionService(IOpcUaClientFactory factory) : ILiveSignalSubscriptionService
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\Services\SeederHostedService.cs:12: public class SeederHostedService : IPlcService<Session, SeedInfo>
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\PlcLabConstants.cs:3: public static class PlcLabConstants
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\PlcLabDbContext.cs:6: public class PlcLabDbContext : DbContext
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\SeedDemoData.cs:3: {      public static class SeedDemoData
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\SeedInfo.cs:3: public class SeedInfo
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Infrastructure\SeedInfo.cs:9: public class SeedVariable
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.OPC\IOpcUaClientFactory.cs:7: public interface IOpcUaClientFactory
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.OPC\OpcUaClientFactory.cs:12: public class OpcUaClientFactory(ITelemetryContext telemetry) : IOpcUaClientFactory
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.OPC\SerilogLoggerFactory.cs:8: public sealed class SerilogTelemetry : TelemetryContextBase
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Api\SeedInfoApi.cs:11: public static class SeedInfoApi
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Api\TestPlansApi.cs:8: public static class TestPlansApi
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Api\TestRunsApi.cs:13: public static class TestRunsApi
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Api\TestRunsApi.cs:62: public class TestRunDto
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Api\TestRunsApi.cs:69: public class TestResultDto
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Api\TestRunsApi.cs:74: public class TestRunRequest
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Components\LiveSignals.razor.cs:8: public partial class LiveSignals : ComponentBase
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\ConnectionStatusService.cs:10: public interface IOpcConnectionService
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\ConnectionStatusService.cs:21: public sealed class ConnectionStatusService : IOpcConnectionService, IAsyncDisposable
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\OpcUaEndpointService.cs:8: public class OpcUaEndpointService
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\OpenTelemetryService.cs:10: public static class OpenTelemetryService
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\SeedDataClient.cs:10: public interface ISeedDataClient
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\SeedDataClient.cs:16: public sealed class SeedDataClient : ISeedDataClient
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\ViewModel\IndexViewModel.cs:10: public class IndexViewModel
+F:\git\jh\PlcLab-Docker-OPC-Blazor\tests\PlcLab.Web.Tests\IndexViewModelTests.cs:13: public class IndexViewModelTests
+F:\git\jh\PlcLab-Docker-OPC-Blazor\tests\PlcLab.Web.Tests\LayerTests.cs:7: public class LayerTests
+F:\git\jh\PlcLab-Docker-OPC-Blazor\tests\PlcLab.Web.Tests\Solidtests.cs:4: public class Solidtests

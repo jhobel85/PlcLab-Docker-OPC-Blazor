@@ -1,15 +1,16 @@
 using PlcLab.Domain;
-using PlcLab.OPC;
 
 namespace PlcLab.Application;
 
 public class TestRunOrchestrator
 {
-    private readonly IOpcUaClientFactory _opcFactory;
+    private readonly Ports.IOpcSessionPort _sessionPort;
+    private readonly Ports.IReadWritePort _readWritePort;
 
-    public TestRunOrchestrator(IOpcUaClientFactory opcFactory)
+    public TestRunOrchestrator(Ports.IOpcSessionPort sessionPort, Ports.IReadWritePort readWritePort)
     {
-        _opcFactory = opcFactory;
+        _sessionPort = sessionPort;
+        _readWritePort = readWritePort;
     }
 
     public async Task<TestRun> ExecuteTestPlanAsync(TestPlan plan, string endpoint, CancellationToken ct = default)
@@ -20,7 +21,7 @@ public class TestRunOrchestrator
             TestPlanId = plan.Id,
             StartedAt = DateTime.UtcNow
         };
-        using var session = await _opcFactory.CreateSessionAsync(endpoint, useSecurity: false, ct);
+        using var session = await _sessionPort.CreateSessionAsync(endpoint, useSecurity: false, ct);
         foreach (var testCase in plan.TestCases)
         {
             var result = await ExecuteTestCaseAsync(session, testCase, ct);
@@ -45,7 +46,7 @@ public class TestRunOrchestrator
             // Example: read value from OPC UA
             try
             {
-                var value = await _opcFactory.ReadValueAsync(session, new Opc.Ua.NodeId(signal.SignalName), ct);
+                var value = await _readWritePort.ReadValueAsync(session, new Opc.Ua.NodeId(signal.SignalName), ct);
                 snapshots.Add(new SignalSnapshot
                 {
                     Id = Guid.NewGuid(),

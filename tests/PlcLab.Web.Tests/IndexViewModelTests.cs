@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using PlcLab.Infrastructure;
+using PlcLab.Domain;
 using PlcLab.Web.Services;
 using PlcLab.Web.ViewModel;
 using Xunit;

@@ -35,7 +35,8 @@ namespace PlcLab.Web.Api
                 await db.SaveChangesAsync(cancellationToken);
 
                 return Results.Ok(new { testRun.Id, Status = "Completed" });
-            });
+            })
+            .RequireAuthorization();
 
             // GET /api/testruns - return all test runs with plan name and results
             app.MapGet("/api/testruns", async (PlcLabDbContext db) =>

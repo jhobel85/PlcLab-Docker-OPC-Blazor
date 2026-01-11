@@ -60,6 +60,12 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [ ] Client certificate store + trust list management UI
 - [ ] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
 - [ ] README section on certificate workflow (generate, trust, revoke)
+- [ ] Implement code signing for Docker images and application binaries
+- [ ] Automate certificate generation and renewal (see CertificatesGuide.md)
+- [ ] Integrate signing into CI/CD pipeline
+- [ ] Document signing process in project docs
+- [ ] Add verification steps to deployment scripts
+> **Note:** Login/authentication is currently disabled for development/testing. Re-enable before production deployment.
 
 ## 8) In‑Process Mock OPC UA Server (optional)
 - [ ] .NET worker hosting a minimal OPC UA server

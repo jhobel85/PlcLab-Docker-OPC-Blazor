@@ -1,0 +1,7 @@
+Project 'PlcLab.Application' has the following package references
+   [net8.0]: 
+   Top-level Package                              Requested   Resolved
+   > Microsoft.EntityFrameworkCore                7.0.15      7.0.15  
+   > Microsoft.EntityFrameworkCore.SqlServer      7.0.15      7.0.15  
+   > Microsoft.EntityFrameworkCore.Tools          7.0.15      7.0.15  
+

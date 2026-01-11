@@ -225,6 +225,7 @@ else
         }
         ShowPlanDialog = false;
         await LoadPlans();
+        StateHasChanged();
     }
 
     private async Task DeletePlan(TestPlan plan)
@@ -232,5 +233,6 @@ else
         var client = HttpFactory.CreateClient("Api");
         await client.DeleteAsync($"api/testplans/{plan.Id}");
         await LoadPlans();
+        StateHasChanged();
     }
 }

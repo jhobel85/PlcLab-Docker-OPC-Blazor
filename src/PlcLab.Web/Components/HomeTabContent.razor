@@ -16,24 +16,33 @@
         }
     }
 
+    public void Dispose()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.Connected -= OnConnected;
+            ViewModel.StatusChanged -= OnStatusChanged;
+        }
+    }
+
     private async void OnConnected()
     {
         if (ViewModel != null)
         {
             await ViewModel.LoadSeedInfoAsync();
             await FetchAddMethodResultAsync();
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
     }
 
-    private void OnStatusChanged()
+    private async void OnStatusChanged()
     {
         if (ViewModel == null || ViewModel.Session == null || !ViewModel.Session.Connected)
         {
             _addMethodResult = null;
             _addMethodDebug = null;
             if (ViewModel != null) ViewModel.ClearSeedInfo();
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -69,7 +78,7 @@
         {
             await ViewModel.LoadSeedInfoAsync();
             await FetchAddMethodResultAsync();
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
     }
     [Inject] NavigationManager NavigationManager { get; set; } = default!;

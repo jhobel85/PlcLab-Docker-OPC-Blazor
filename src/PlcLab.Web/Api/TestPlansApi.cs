@@ -15,7 +15,8 @@ public static class TestPlansApi
                 .Include(tp => tp.TestCases)
                 .ToListAsync();
             return Results.Ok(plans);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapPost("/api/testplans", async ([FromServices] PlcLabDbContext db, [FromBody] TestPlan plan) =>
         {
@@ -25,7 +26,8 @@ public static class TestPlansApi
             db.TestPlans.Add(plan);
             await db.SaveChangesAsync();
             return Results.Created($"/api/testplans/{plan.Id}", plan);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapPut("/api/testplans/{id:guid}", async ([FromServices] PlcLabDbContext db, Guid id, [FromBody] TestPlan plan) =>
         {
@@ -39,7 +41,8 @@ public static class TestPlansApi
             existing.TestCases = plan.TestCases;
             await db.SaveChangesAsync();
             return Results.Ok(existing);
-        });
+        })
+        .RequireAuthorization();
 
         app.MapDelete("/api/testplans/{id:guid}", async ([FromServices] PlcLabDbContext db, Guid id) =>
         {

@@ -1,20 +1,20 @@
 using Microsoft.Extensions.Configuration;
 using Opc.Ua;
 using Opc.Ua.Client;
-using PlcLab.OPC;
+using PlcLab.Application.Ports;
 using Serilog;
 
 namespace PlcLab.Infrastructure
 {
-    public class BrowseService(IConfiguration configuration, IOpcUaClientFactory opcFactory) 
+    public class BrowseService(IConfiguration configuration, IBrowsePort browsePort)
     {
         private readonly IConfiguration _configuration = configuration;
-        private readonly IOpcUaClientFactory _opcFactory = opcFactory;
+        private readonly IBrowsePort _browsePort = browsePort;
 
         // Recursively browse all nodes and log their details        
         public async Task RecursiveBrowseAsync(Session session, NodeId nodeId, CancellationToken ct, string indent)
         {
-            var children = await _opcFactory.BrowseAsync(session, nodeId, ct);
+            var children = await _browsePort.BrowseAsync(session, nodeId, ct);
             foreach (var child in children)
             {
                 Log.Information("{Indent}- DisplayName: {DisplayName}, BrowseName: {BrowseName}, NodeId: {NodeId}, NodeClass: {NodeClass}",

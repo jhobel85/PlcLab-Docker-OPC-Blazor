@@ -1,3 +1,4 @@
+
 using PlcLab.Web.Api;
 using PlcLab.Infrastructure;
 using PlcLab.Infrastructure.Services;
@@ -8,6 +9,8 @@ using PlcLab.Web;
 using Serilog;
 using PlcLab.Web.Services;
 using PlcLab.Web.ViewModel;
+using PlcLab.Application;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 // Configure Serilog before building
 Log.Logger = new LoggerConfiguration()
@@ -17,6 +20,17 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+// Add JWT Bearer authentication
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.Authority = builder.Configuration["Jwt:Authority"] ?? "https://demo.identityserver.io/";
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateAudience = false
+        };
+    });
+builder.Services.AddAuthorization();
 // Add SQL Server DbContext
 // Add PostgreSQL DbContext
 builder.Services.AddDbContext<PlcLabDbContext>(options =>
@@ -50,16 +64,31 @@ builder.Services.AddHttpClient("Api", client =>
     client.BaseAddress = baseUri!;
 });
 builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
-builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
-builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscriptionService>();
-// Register demo data seeder hosted service and as injectable singleton
-builder.Services.AddScoped<IndexViewModel>();
+// Register OPC adapters for Application ports
+builder.Services.AddSingleton<PlcLab.OPC.Adapters.OpcSessionAdapter>();
+builder.Services.AddSingleton<PlcLab.OPC.Adapters.OpcBrowseAdapter>();
+builder.Services.AddSingleton<PlcLab.OPC.Adapters.OpcReadWriteAdapter>();
+builder.Services.AddSingleton<PlcLab.OPC.Adapters.OpcSubscriptionAdapter>();
 builder.Services.AddSingleton<PlcLab.Infrastructure.BrowseService>();
-builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
+builder.Services.AddSingleton<PlcLab.Infrastructure.Services.ISeederService, PlcLab.Infrastructure.SeederHostedService>();
+builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var sessionPort = sp.GetRequiredService<PlcLab.Application.Ports.IOpcSessionPort>();
+    var browseService = sp.GetRequiredService<PlcLab.Infrastructure.BrowseService>();
+    return new PlcLab.Infrastructure.SeederHostedService(config, sessionPort, browseService);
+});
+builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscriptionService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PlcLab.Infrastructure.SeederHostedService>());
+builder.Services.AddScoped<IndexViewModel>();
 builder.Services.AddScoped<OpcUaEndpointService>();
 builder.Services.AddSingleton<IOpcConnectionService, ConnectionStatusService>();
 builder.Services.AddScoped<ISeedDataClient, SeedDataClient>();
+// Register Application ports for orchestrator and other consumers
+builder.Services.AddSingleton<PlcLab.Application.Ports.IOpcSessionPort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcSessionAdapter>());
+builder.Services.AddSingleton<PlcLab.Application.Ports.IBrowsePort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcBrowseAdapter>());
+builder.Services.AddSingleton<PlcLab.Application.Ports.IReadWritePort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcReadWriteAdapter>());
+builder.Services.AddSingleton<PlcLab.Application.Ports.ISubscriptionPort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcSubscriptionAdapter>());
 builder.Services.AddScoped<TestRunOrchestrator>();
 
 // OpenTelemetry tracing configuration
@@ -77,8 +106,8 @@ SeedInfoApi.MapSeedInfoEndpoint(app);
 TestPlansApi.MapTestPlansApi(app);
 TestRunsApi.MapTestRunsApi(app);
 app.UseHttpsRedirection();
-//app.UseAuthentication();
-//app.UseAuthorization();
+// app.UseAuthentication();
+// app.UseAuthorization();
 app.UseStaticFiles();
 app.UseAntiforgery();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();

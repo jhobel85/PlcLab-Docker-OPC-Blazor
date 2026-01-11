@@ -22,4 +22,7 @@
     <PackageReference Include="Serilog.Extensions.Logging" />
     <PackageReference Include="Serilog.Sinks.Console" />
   </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\PlcLab.Application\PlcLab.Application.csproj" />
+    </ItemGroup>
 </Project>

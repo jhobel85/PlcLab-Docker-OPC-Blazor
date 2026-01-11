@@ -1,0 +1,13 @@
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Services\OpenTelemetryService.cs:32: .AddHttpClientInstrumentation();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:23: builder.Services.AddDbContext<PlcLabDbContext>(options =>
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:28: builder.Services.AddHttpClient("Api", client =>
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:53: builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:54: builder.Services.AddSingleton<IOpcUaClientFactory, OpcUaClientFactory>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:55: builder.Services.AddSingleton<ILiveSignalSubscriptionService, LiveSignalSubscriptionService>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:57: builder.Services.AddScoped<IndexViewModel>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:58: builder.Services.AddSingleton<PlcLab.Infrastructure.BrowseService>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:59: builder.Services.AddSingleton<PlcLab.Infrastructure.SeederHostedService>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:61: builder.Services.AddScoped<OpcUaEndpointService>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:62: builder.Services.AddSingleton<IOpcConnectionService, ConnectionStatusService>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:63: builder.Services.AddScoped<ISeedDataClient, SeedDataClient>();
+F:\git\jh\PlcLab-Docker-OPC-Blazor\src\PlcLab.Web\Program.cs:64: builder.Services.AddScoped<TestRunOrchestrator>();

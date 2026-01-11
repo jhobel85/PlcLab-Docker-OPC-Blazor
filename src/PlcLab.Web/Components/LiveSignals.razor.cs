@@ -55,7 +55,7 @@ public partial class LiveSignals : ComponentBase
             IsSubscribed = true;
             StateHasChanged();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await UnsubscribeAsync();
         }

@@ -3,29 +3,30 @@ using Microsoft.Extensions.Hosting;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Gds;
-using PlcLab.Infrastructure;
-using PlcLab.OPC;
+using PlcLab.Domain;
+using PlcLab.Application.Ports;
 using Serilog;
+using PlcLab.Infrastructure.Services;
 
 namespace PlcLab.Infrastructure
 {
-    public class SeederHostedService : IPlcService<Session, SeedInfo>
+    public class SeederHostedService : IPlcService<Session, SeedInfo>, ISeederService
     {
         private readonly IConfiguration _configuration;
-        private readonly IOpcUaClientFactory _opcFactory;
+        private readonly IOpcSessionPort _sessionPort;
         private readonly BrowseService _browseService;
 
-        public SeederHostedService(IConfiguration configuration, IOpcUaClientFactory opcFactory, BrowseService browseService)
+        public SeederHostedService(IConfiguration configuration, IOpcSessionPort sessionPort, BrowseService browseService)
         {
             _configuration = configuration;
-            _opcFactory = opcFactory;
+            _sessionPort = sessionPort;
             _browseService = browseService;
         }
 
         private SeedInfo? _seedInfo;
         private Session? _session;
 
-        public async Task<Session> GetSessionAsync(CancellationToken cancellationToken)
+        public async Task<Session?> GetSessionAsync(CancellationToken cancellationToken)
         {
             if (_session != null && _session.Connected)
             {
@@ -51,7 +52,7 @@ namespace PlcLab.Infrastructure
             {
                 try
                 {
-                    _session = await _opcFactory.CreateSessionAsync(endpoint, useSecurity: false, cancellationToken);
+                    _session = await _sessionPort.CreateSessionAsync(endpoint, useSecurity: false, cancellationToken);
                     Log.Information("Connected to OPC UA server at {Endpoint} (attempt {Attempt}/{MaxRetries})", endpoint, attempt, maxRetries);
                     return _session;
                 }
@@ -160,17 +161,26 @@ namespace PlcLab.Infrastructure
                 var inputArgs = new Variant[] { new Variant(num1), new Variant(num2) };
                 Log.Debug("  inputArgs: [{InputArgs}]", string.Join(", ", inputArgs.Select(a => $"{a.Value} ({a.Value?.GetType()})")));
 
-                // Call the method using the factory and handle output
                 try
                 {
-                    var output = await _opcFactory.CallMethodAsync(session, objectId, methodId, inputArgs);
-                    if (output != null && output.Length > 0)
+                    var request = new CallMethodRequest
                     {
-                        Log.Debug("  output: {Output} (type: {OutputType})", output[0].Value, output[0].Value?.GetType());
-                        return Convert.ToDouble(output[0].Value);
+                        ObjectId = objectId,
+                        MethodId = methodId,
+                        InputArguments = new VariantCollection(inputArgs)
+                    };
+
+                    var response = await session.CallAsync(null, new CallMethodRequestCollection { request }, CancellationToken.None);
+                    var callResult = response.Results?.FirstOrDefault();
+                    if (callResult == null || StatusCode.IsBad(callResult.StatusCode) || callResult.OutputArguments == null)
+                    {
+                        Log.Debug("  output: null");
+                        return null;
                     }
-                    Log.Debug("  output: null or empty");
-                    return null;
+
+                    var outputValue = callResult.OutputArguments.FirstOrDefault().Value;
+                    Log.Debug("  output: {Output} (type: {OutputType})", outputValue, outputValue?.GetType());
+                    return outputValue != null ? Convert.ToDouble(outputValue) : null;
                 }
                 catch (Exception ex)
                 {

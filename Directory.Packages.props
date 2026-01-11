@@ -1,11 +1,11 @@
 <Project>
   <ItemGroup>
     <!-- OPC UA-->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.15">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.65" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.5.378.65" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.5.378.65" />
@@ -24,12 +24,13 @@
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.8.0" />
     <!-- EF Core -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="7.0.15" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.15" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <!-- Testing -->
     <PackageVersion Include="xunit" Version="2.7.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.7" />

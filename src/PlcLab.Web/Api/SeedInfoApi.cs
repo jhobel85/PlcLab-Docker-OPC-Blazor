@@ -1,3 +1,4 @@
+using PlcLab.Domain;
 using System;
 using System.Linq;
 using System.Threading;
@@ -43,6 +44,7 @@ public static class SeedInfoApi
             var result = await seedDataClient.InvokeAddAsync(null, floatValue, uintValue, cancellationToken).ConfigureAwait(false);
 
             return Results.Ok(new { seedEnabled = seedInfo.SeedEnabled, variables = seedInfo.Variables, result, debug = "Loaded via SeedDataClient" });
-        });
+        })
+        .RequireAuthorization();
     }
 }

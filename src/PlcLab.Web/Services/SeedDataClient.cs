@@ -1,3 +1,4 @@
+using PlcLab.Domain;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -15,9 +16,9 @@ namespace PlcLab.Web.Services
 
     public sealed class SeedDataClient : ISeedDataClient
     {
-        private readonly SeederHostedService _seeder;
+        private readonly PlcLab.Infrastructure.Services.ISeederService _seeder;
 
-        public SeedDataClient(SeederHostedService seeder)
+        public SeedDataClient(PlcLab.Infrastructure.Services.ISeederService seeder)
         {
             _seeder = seeder;
         }

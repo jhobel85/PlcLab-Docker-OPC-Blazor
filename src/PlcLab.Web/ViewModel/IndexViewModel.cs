@@ -1,3 +1,4 @@
+using PlcLab.Domain;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -72,7 +73,7 @@ namespace PlcLab.Web.ViewModel
         {
             try
             {
-                SeedInfo = await _seedDataClient.LoadSeedInfoAsync(Session).ConfigureAwait(false);
+                SeedInfo = await _seedDataClient.LoadSeedInfoAsync(Session);
             }
             catch (Exception ex)
             {

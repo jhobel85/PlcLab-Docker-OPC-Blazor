@@ -1,8 +1,8 @@
+using PlcLab.Application.Ports;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua.Client;
-using PlcLab.OPC;
 using Serilog;
 
 namespace PlcLab.Web.Services
@@ -22,7 +22,7 @@ namespace PlcLab.Web.Services
     {
         private static readonly ActivitySource ActivitySource = new("PlcLab.Web.ConnectionStatus");
 
-        private readonly IOpcUaClientFactory _opcFactory;
+        private readonly IOpcSessionPort _sessionPort;
         private readonly SemaphoreSlim _connectLock = new(1, 1);
 
         private Session? _currentSession;
@@ -30,16 +30,16 @@ namespace PlcLab.Web.Services
         private bool _isConnecting;
         private int _sessionVersion;
 
-        public ConnectionStatusService(IOpcUaClientFactory opcFactory)
+        public ConnectionStatusService(IOpcSessionPort sessionPort)
         {
-            _opcFactory = opcFactory;
+            _sessionPort = sessionPort;
         }
 
         public Session? CurrentSession => _currentSession;
         public string Status => _status;
         public bool IsConnecting => _isConnecting;
         public int SessionVersion => _sessionVersion;
-        public string ClientApplicationName => _opcFactory.GetApplicationName();
+        public string ClientApplicationName => _sessionPort.GetApplicationName();
 
         public async Task TryConnectAsync(string endpoint, CancellationToken cancellationToken = default)
         {
@@ -69,7 +69,7 @@ namespace PlcLab.Web.Services
             {
                 await CloseCurrentSessionAsync().ConfigureAwait(false);
 
-                var session = await _opcFactory.CreateSessionAsync(endpoint, useSecurity: false, cancellationToken)
+                var session = await _sessionPort.CreateSessionAsync(endpoint, useSecurity: false, cancellationToken)
                     .ConfigureAwait(false);
 
                 _currentSession = session;

@@ -7,9 +7,9 @@ namespace PlcLab.Infrastructure
     /// Generic PLC service interface for fetching data and calling various methods of various types.
     /// </summary>
     public interface IPlcService<TSession, TData> : IHostedService
-        where TSession : class
+        where TSession : class?
     {
-        Task<TSession> GetSessionAsync(CancellationToken cancellationToken);
+        Task<TSession?> GetSessionAsync(CancellationToken cancellationToken);
 
         Task<TData> GetDataAsync(TSession session, CancellationToken cancellationToken);
 

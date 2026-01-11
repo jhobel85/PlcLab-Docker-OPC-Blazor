@@ -2,7 +2,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\PlcLab.Domain\PlcLab.Domain.csproj" />
-    <ProjectReference Include="..\PlcLab.OPC\PlcLab.OPC.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
@@ -11,6 +10,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" />
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
