@@ -17,15 +17,18 @@ namespace PlcLab.Web.Tests
         public async Task ExecuteTestPlanAsync_ReturnsTestRunWithResults()
         {
             // Arrange
-            var sessionMock = new Mock<Session>();
-            var sessionPortMock = new Mock<IOpcSessionPort>();
+            var realSession = (Opc.Ua.Client.Session)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Opc.Ua.Client.Session));
+            var opcUaSessionStub = new TestOpcUaSession(realSession);
+
+            var sessionFactoryMock = new Mock<IOpcUaSessionFactory>();
+            sessionFactoryMock.Setup(f => f.CreateSessionAsync(It.IsAny<string>(), false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(opcUaSessionStub);
+
             var readWritePortMock = new Mock<IReadWritePort>();
-            sessionPortMock.Setup(p => p.CreateSessionAsync(It.IsAny<string>(), false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(sessionMock.Object);
-            readWritePortMock.Setup(p => p.ReadValueAsync(sessionMock.Object, It.IsAny<Opc.Ua.NodeId>(), It.IsAny<CancellationToken>()))
+            readWritePortMock.Setup(p => p.ReadValueAsync(realSession, It.IsAny<Opc.Ua.NodeId>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync("42");
 
-            var orchestrator = new TestRunOrchestrator(sessionPortMock.Object, readWritePortMock.Object);
+            var orchestrator = new TestRunOrchestrator(sessionFactoryMock.Object, readWritePortMock.Object);
             var testPlan = new TestPlan
             {
                 Id = Guid.NewGuid(),
@@ -36,7 +39,8 @@ namespace PlcLab.Web.Tests
                         Id = Guid.NewGuid(),
                         RequiredSignals = new List<SignalSnapshot>
                         {
-                            new SignalSnapshot { SignalName = "Signal1" }
+                            // Use a valid OPC UA NodeId string
+                            new SignalSnapshot { SignalName = "ns=2;s=Signal1" }
                         }
                     }
                 }
@@ -45,13 +49,34 @@ namespace PlcLab.Web.Tests
             // Act
             var result = await orchestrator.ExecuteTestPlanAsync(testPlan, "opc.tcp://test", CancellationToken.None);
 
+            // Debug output
+
+            if (result.Results.Count > 0)
+            {
+                var res = result.Results[0];
+                if (!res.Passed)
+                {
+                    var msg = $"TestCaseId: {res.TestCaseId}, Passed: {res.Passed}, Message: {res.Message}, Snapshots: {res.Snapshots.Count}";
+                    if (res.Snapshots.Count > 0)
+                        msg += $", Snapshot Value: {res.Snapshots[0].Value}";
+                    throw new Exception($"Test failed debug info: {msg}");
+                }
+            }
+
             // Assert
             Assert.NotNull(result);
             Assert.Equal(testPlan.Id, result.TestPlanId);
             Assert.Single(result.Results);
             Assert.True(result.Results[0].Passed);
-            Assert.Equal("Signal1", result.Results[0].Snapshots[0].SignalName);
+            Assert.Equal("ns=2;s=Signal1", result.Results[0].Snapshots[0].SignalName);
             Assert.Equal("42", result.Results[0].Snapshots[0].Value);
+        }
+
+        private class TestOpcUaSession : IOpcUaSession
+        {
+            public TestOpcUaSession(Opc.Ua.Client.Session session) => InnerSession = session;
+            public Opc.Ua.Client.Session InnerSession { get; }
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         }
     }
 }

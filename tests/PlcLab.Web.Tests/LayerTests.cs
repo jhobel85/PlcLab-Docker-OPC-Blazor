@@ -6,9 +6,9 @@ using Xunit;
 
 public class LayerTests
 {
-    private const string Controllers = "MyApp.Controllers";
-    private const string Services = "MyApp.Services";
-    private const string Repositories = "MyApp.Repositories";
+    private const string Controllers = "PlcLab.Web.Controllers";
+    private const string Services = "PlcLab.Application.Services";
+    private const string Repositories = "PlcLab.Infrastructure.Repositories";
 
     [Fact]
     /**
@@ -16,23 +16,23 @@ public class LayerTests
     */
     public void No_Cyclic_Dependencies()
     {
-        // Build a namespace dependency graph
+        // Build a namespace dependency graph for only PlcLab.* namespaces
         var assemblies = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !(a.FullName?.StartsWith("System") ?? false) && !(a.FullName?.StartsWith("Microsoft") ?? false));
         var typeNamespaceDeps = new Dictionary<string, HashSet<string>>();
 
         foreach (var type in assemblies.SelectMany(a => a.GetTypes()))
         {
-            if (string.IsNullOrEmpty(type.Namespace)) continue;
+            if (string.IsNullOrEmpty(type.Namespace) || !type.Namespace.StartsWith("PlcLab")) continue;
             var deps = new HashSet<string>();
             foreach (var field in type.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
             {
-                if (!string.IsNullOrEmpty(field.FieldType.Namespace) && field.FieldType.Namespace != type.Namespace)
+                if (!string.IsNullOrEmpty(field.FieldType.Namespace) && field.FieldType.Namespace != type.Namespace && field.FieldType.Namespace.StartsWith("PlcLab"))
                     deps.Add(field.FieldType.Namespace);
             }
             foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
             {
-                if (!string.IsNullOrEmpty(prop.PropertyType.Namespace) && prop.PropertyType.Namespace != type.Namespace)
+                if (!string.IsNullOrEmpty(prop.PropertyType.Namespace) && prop.PropertyType.Namespace != type.Namespace && prop.PropertyType.Namespace.StartsWith("PlcLab"))
                     deps.Add(prop.PropertyType.Namespace);
             }
             if (!typeNamespaceDeps.ContainsKey(type.Namespace))
@@ -41,19 +41,25 @@ public class LayerTests
                 typeNamespaceDeps[type.Namespace].Add(dep);
         }
 
-        // DFS to detect cycles
+        // DFS to detect cycles and print the cycle path
         var visited = new HashSet<string>();
-        var stack = new HashSet<string>();
+        var stack = new Stack<string>();
+        string? cyclePath = null;
         bool HasCycle(string ns)
         {
+            if (stack.Contains(ns))
+            {
+                cyclePath = string.Join(" -> ", stack.Reverse().Concat(new[] { ns }));
+                return true;
+            }
             if (!visited.Add(ns)) return false;
-            stack.Add(ns);
+            stack.Push(ns);
             foreach (var dep in typeNamespaceDeps.GetValueOrDefault(ns) ?? Enumerable.Empty<string>())
             {
-                if (stack.Contains(dep) || HasCycle(dep))
+                if (HasCycle(dep))
                     return true;
             }
-            stack.Remove(ns);
+            stack.Pop();
             return false;
         }
 
@@ -68,7 +74,14 @@ public class LayerTests
                 break;
             }
         }
-        Assert.False(foundCycle, "Cyclic namespace dependencies detected");
+        if (foundCycle && cyclePath != null)
+        {
+            Assert.False(true, $"Cyclic namespace dependencies detected: {cyclePath}");
+        }
+        else
+        {
+            Assert.False(foundCycle, "Cyclic namespace dependencies detected");
+        }
     }
 
     [Fact]

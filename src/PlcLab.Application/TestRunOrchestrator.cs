@@ -2,14 +2,17 @@ using PlcLab.Domain;
 
 namespace PlcLab.Application;
 
+using PlcLab.Application.Ports;
+using Opc.Ua.Client;
+
 public class TestRunOrchestrator
 {
-    private readonly Ports.IOpcSessionPort _sessionPort;
+    private readonly IOpcUaSessionFactory _sessionFactory;
     private readonly Ports.IReadWritePort _readWritePort;
 
-    public TestRunOrchestrator(Ports.IOpcSessionPort sessionPort, Ports.IReadWritePort readWritePort)
+    public TestRunOrchestrator(IOpcUaSessionFactory sessionFactory, Ports.IReadWritePort readWritePort)
     {
-        _sessionPort = sessionPort;
+        _sessionFactory = sessionFactory;
         _readWritePort = readWritePort;
     }
 
@@ -21,7 +24,7 @@ public class TestRunOrchestrator
             TestPlanId = plan.Id,
             StartedAt = DateTime.UtcNow
         };
-        using var session = await _sessionPort.CreateSessionAsync(endpoint, useSecurity: false, ct);
+        await using var session = await _sessionFactory.CreateSessionAsync(endpoint, useSecurity: false, ct);
         foreach (var testCase in plan.TestCases)
         {
             var result = await ExecuteTestCaseAsync(session, testCase, ct);
@@ -31,7 +34,7 @@ public class TestRunOrchestrator
         return run;
     }
 
-    private async Task<TestResult> ExecuteTestCaseAsync(Opc.Ua.Client.Session session, TestCase testCase, CancellationToken ct)
+    private async Task<TestResult> ExecuteTestCaseAsync(IOpcUaSession session, TestCase testCase, CancellationToken ct)
     {
         // Raise event: TestCaseStarted
         var startedEvent = new TestCaseStarted(testCase.Id);
@@ -46,7 +49,8 @@ public class TestRunOrchestrator
             // Example: read value from OPC UA
             try
             {
-                var value = await _readWritePort.ReadValueAsync(session, new Opc.Ua.NodeId(signal.SignalName), ct);
+                var value = await _readWritePort.ReadValueAsync(session.InnerSession, new Opc.Ua.NodeId(signal.SignalName), ct);
+                Console.WriteLine($"ReadValueAsync for {signal.SignalName} returned: {value}");
                 snapshots.Add(new SignalSnapshot
                 {
                     Id = Guid.NewGuid(),
@@ -59,6 +63,7 @@ public class TestRunOrchestrator
             {
                 passed = false;
                 message = $"Signal {signal.SignalName} read failed: {ex.Message}";
+                Console.WriteLine($"Exception in ReadValueAsync: {ex}");
                 break;
             }
         }
