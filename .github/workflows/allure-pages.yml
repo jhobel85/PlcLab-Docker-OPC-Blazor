@@ -41,7 +41,7 @@ jobs:
       - name: Test
         run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
         env:
-          ALLURE_OUTPUT: tests/PlcLab.Web.Tests/allure-results
+          ALLURE_RESULTS_DIRECTORY: tests/PlcLab.Web.Tests/allure-results
 
       - name: Verify Allure results
         run: |
