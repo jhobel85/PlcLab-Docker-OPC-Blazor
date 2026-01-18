@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write  # required to push to gh-pages
+
 jobs:
   allure-test-and-publish:
     runs-on: ubuntu-latest
