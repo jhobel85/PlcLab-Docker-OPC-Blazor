@@ -1,20 +1,24 @@
+using Allure.Xunit.Attributes;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using PlcLab.Infrastructure;
 using PlcLab.Domain;
 using PlcLab.Web.Services;
 using PlcLab.Web.ViewModel;
 using Xunit;
+using System.Linq;
 
 namespace PlcLab.Web.Tests
 {
+    [AllureSuite("IndexViewModel")]
     public class IndexViewModelTests
+        
     {
 
         [Fact]
+            [AllureFeature("Button Click")]
         public void TestButtonClick_IncrementsClickCount()
         {
             var (vm, _, _) = CreateViewModel();
@@ -24,6 +28,7 @@ namespace PlcLab.Web.Tests
         }
 
         [Fact]
+            [AllureFeature("Connection Status")]
         public async Task TryConnectAsync_UpdatesStatus()
         {
             var (vm, connectionMock, seedMock) = CreateViewModel();
@@ -53,14 +58,13 @@ namespace PlcLab.Web.Tests
             seedMock.Setup(s => s.InvokeAddAsync(It.IsAny<Opc.Ua.Client.Session?>(), It.IsAny<float>(), It.IsAny<uint>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(0d);
 
-            var config = new ConfigurationBuilder()
+
+            var vm = new IndexViewModel(connectionMock.Object, seedMock.Object, new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["OpcUa:Endpoint"] = "opc.tcp://test:4840"
-                })
-                .Build();
-
-            var vm = new IndexViewModel(connectionMock.Object, seedMock.Object, config);
+                }.Select(kv => new KeyValuePair<string, string?>(kv.Key, kv.Value)))
+                .Build());
             return (vm, connectionMock, seedMock);
         }
     }

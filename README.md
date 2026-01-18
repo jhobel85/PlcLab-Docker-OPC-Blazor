@@ -90,9 +90,9 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 ---
 
 ## Milestones
-- [ ] M1: Repo scaffold + Docker ref server + basic connect/browse
-- [ ] M2: Subscriptions + Run Wizard + minimal persistence
-- [ ] M3: Method calls + Results Explorer + export
+- [x] M1: Repo scaffold + Docker ref server + basic connect/browse
+- [x] M2: Subscriptions + Run Wizard + minimal persistence
+- [x] M3: Method calls + Results Explorer + export
 - [ ] M4: CI pipeline + integration tests (virtual PLC)
 - [ ] M5 (optional): In‑process mock server + extra UI polish
 
@@ -103,6 +103,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [ ] Feature flags for experimental UI
 - [ ] Localization (CS/EN) and time zone handling
 - [ ] Blazor UI - dark mode + responsive layout (MudBlazor or Bootstrap)
+
 
 ---
 

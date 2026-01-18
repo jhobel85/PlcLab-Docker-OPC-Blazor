@@ -1,0 +1,38 @@
+name: Allure Test Report with History
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore PlcLab-Docker-OPC-Blazor.sln
+      - name: Test
+        run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
+      - name: Download previous Allure history
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-history
+          path: tests/PlcLab.Web.Tests/allure-results/history
+        continue-on-error: true
+      - name: Generate Allure report
+        run: |
+          npx allure generate tests/PlcLab.Web.Tests/allure-results -o allure-report --clean || true
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: tests/PlcLab.Web.Tests/allure-results
+      - name: Upload Allure report with history
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-history
+          path: allure-report/history

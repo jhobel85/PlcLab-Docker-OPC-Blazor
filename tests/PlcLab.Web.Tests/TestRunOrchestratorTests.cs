@@ -1,3 +1,4 @@
+using Allure.Xunit.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -11,13 +12,17 @@ using Xunit;
 
 namespace PlcLab.Web.Tests
 {
-    public class TestRunOrchestratorTests
+    [AllureSuite("TestRunOrchestrator")]
+    public class TestRunOrchestratorTests        
     {
         [Fact]
+            [AllureFeature("Test Plan Execution")]
         public async Task ExecuteTestPlanAsync_ReturnsTestRunWithResults()
         {
             // Arrange
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
             var realSession = (Opc.Ua.Client.Session)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Opc.Ua.Client.Session));
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
             var opcUaSessionStub = new TestOpcUaSession(realSession);
 
             var sessionFactoryMock = new Mock<IOpcUaSessionFactory>();
@@ -34,8 +39,7 @@ namespace PlcLab.Web.Tests
                 Id = Guid.NewGuid(),
                 TestCases = new List<TestCase>
                 {
-                    new TestCase
-                    {
+                    new() {
                         Id = Guid.NewGuid(),
                         RequiredSignals = new List<SignalSnapshot>
                         {

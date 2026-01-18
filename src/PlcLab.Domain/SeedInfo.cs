@@ -19,6 +19,8 @@ public class SeedVariable
     {
         if (Value is T t)
             return t;
+        if (Value is null)
+            return default;
         try
         {
             return (T)Convert.ChangeType(Value, typeof(T));

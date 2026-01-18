@@ -16,6 +16,8 @@ bld/
 
 .sonarqube
 
+allure-report/
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json
