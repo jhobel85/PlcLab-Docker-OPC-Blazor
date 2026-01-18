@@ -76,4 +76,11 @@ A minimal OPC UA simulator helper for test runs (C# in tests folder).
 A new test class that exercises a “read/write round-trip” against the simulator.
 A CI job entry to run the sim tests.
 
+## Automated Dependency Updates (Dependabot)
 
+This project uses [Dependabot](https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/about-dependabot-version-updates) to keep dependencies and GitHub Actions up to date automatically:
+
+- **NuGet**: Dependabot checks for new versions of NuGet packages in your .NET projects every week and opens pull requests to update them.
+- **GitHub Actions**: Dependabot also checks for updates to GitHub Actions used in your workflow YAML files and proposes updates weekly.
+
+Configuration is in `.github/dependabot.yml`. Keeping dependencies updated helps ensure security, stability, and access to the latest features and bug fixes.

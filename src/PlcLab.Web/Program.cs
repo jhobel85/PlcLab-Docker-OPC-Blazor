@@ -11,6 +11,7 @@ using PlcLab.Web.Services;
 using PlcLab.Web.ViewModel;
 using PlcLab.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using PlcLab.Application.Ports;
 
 // Configure Serilog before building
 Log.Logger = new LoggerConfiguration()
@@ -90,6 +91,13 @@ builder.Services.AddSingleton<PlcLab.Application.Ports.IBrowsePort>(sp => sp.Get
 builder.Services.AddSingleton<PlcLab.Application.Ports.IReadWritePort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcReadWriteAdapter>());
 builder.Services.AddSingleton<PlcLab.Application.Ports.ISubscriptionPort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcSubscriptionAdapter>());
 builder.Services.AddScoped<TestRunOrchestrator>();
+
+// Minimal IOpcUaSessionFactory implementation for DI
+builder.Services.AddSingleton<IOpcUaSessionFactory>(sp =>
+{
+    var sessionPort = sp.GetRequiredService<PlcLab.Application.Ports.IOpcSessionPort>();
+    return new OpcUaSessionFactoryImpl(sessionPort);
+});
 
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
