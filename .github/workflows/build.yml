@@ -26,7 +26,15 @@ jobs:
         run: dotnet build --no-restore -c Release
 
       - name: Test
-        run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
+        run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
+        env:
+          ALLURE_OUTPUT: tests/PlcLab.Web.Tests/allure-results
+
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: tests/PlcLab.Web.Tests/allure-results
 
       - name: Publish Web App
         run: dotnet publish src/PlcLab.Web -c Release -o out
