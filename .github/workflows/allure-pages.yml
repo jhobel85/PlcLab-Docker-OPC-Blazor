@@ -30,12 +30,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-
-      - name: Test
-        run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
-        env:
-          ALLURE_OUTPUT: tests/PlcLab.Web.Tests/allure-results
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -44,7 +38,10 @@ jobs:
       - name: Restore
         run: dotnet restore PlcLab-Docker-OPC-Blazor.sln
 
-      # Test step removed; tests are run in build-and-test workflow
+      - name: Test
+        run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
+        env:
+          ALLURE_OUTPUT: tests/PlcLab.Web.Tests/allure-results
 
       - name: Verify Allure results
         run: |
