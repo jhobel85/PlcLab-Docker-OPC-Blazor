@@ -1,65 +1,5 @@
 ## Improve Test Reporting & Analytics
 
-### 1. Annotate Tests with Allure Attributes
-- Add `[AllureSuite("SuiteName")]`, `[AllureFeature("FeatureName")]`, `[AllureStory("StoryName")]` to your test classes and methods.
-- Example:
-	```csharp
-	using Allure.Xunit.Attributes;
-	[AllureSuite("Domain Validation")]
-	public class TestCaseValidatorTests {
-			[AllureFeature("Required Signals")]
-			[Fact]
-			public void ValidateRequiredSignals_ReturnsFalse_WhenNoSignals() { ... }
-	}
-	```
-
-### 2. Configure ReportPortal for Analytics
-- Add a `ReportPortal.config.json` or `ReportPortal.config` file to your test project.
-- Set your ReportPortal endpoint, project name, and authentication token.
-- Example config:
-	```json
-	{
-		"server": {
-			"url": "https://your.reportportal.server/api/v1",
-			"project": "your_project_name",
-			"authentication": {
-				"uuid": "your_api_token"
-			}
-		}
-	}
-	```
-
-### 3. Update CI/CD Pipeline to Publish Reports
-- After running tests, add steps to generate and publish Allure reports:
-	```bash
-	allure generate --clean
-	allure open
-	```
-- For ReportPortal, ensure your pipeline runs tests with the ReportPortal adapter enabled and uploads results to your dashboard.
-- Archive historical reports for regression analysis and compliance.
-
-Example (GitHub Actions) to publish Allure results and keep history:
-```yaml
-name: tests
-on: [push, pull_request]
-jobs:
-	test:
-		runs-on: ubuntu-latest
-		steps:
-			- uses: actions/checkout@v4
-			- uses: actions/setup-dotnet@v4
-				with:
-					dotnet-version: 8.0.x
-			- name: Restore
-				run: dotnet restore PlcLab-Docker-OPC-Blazor.sln
-			- name: Test
-				run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
-			- name: Upload Allure results
-				uses: actions/upload-artifact@v4
-				with:
-					name: allure-results
-					path: tests/**/allure-results
-```
 To preserve history, download the previous `allure-report/history` artifact before `allure generate`, then upload the new `allure-report` as an artifact. For ReportPortal, configure `ReportPortal.config.json` and ensure the adapter is enabled during `dotnet test`.
 
 Integrate advanced reporting tools for better visibility and analytics:
@@ -121,44 +61,19 @@ These tools will help you visualize test results, track failures, and improve ov
 
 ---
 
-These improvements will strengthen reliability, maintainability, and scalability of the test automation system.
-## Expand Test Coverage
+## TwinCat Integration (OpcUaSim)
 
-Add more unit, integration, and end-to-end tests for critical paths and edge cases.
-Automate regression testing to catch issues early.
-Improve Test Reporting & Analytics
+For TwinCAT integration, here’s a focused, low-friction starter plan:
 
-Integrate advanced reporting tools (e.g., Allure, ReportPortal) for better visibility.
-Track test metrics and trends over time.
-Continuous Integration/Continuous Deployment (CI/CD)
+Identify simulatable PLC surface: list the key TwinCAT tasks/POUs/functions you need for tests (I/O maps, PLC variables, watchdogs).
+Add a mock/sim OPC UA server profile that mirrors your TwinCAT nodes (namespaces, node IDs, data types). You already read signals by NodeId; we can add a small in-proc simulator for CI (e.g., lightweight UA server seeded with tags).
+Wire CI to run TwinCAT-sim tests: add a dedicated TwinCAT.Sim.Tests project (or mark a subset in existing tests) that uses the simulator, and a GitHub Actions job matrix entry to run it.
+Artifacts and logs: capture simulator logs and test TRX as artifacts for diagnosing PLC interaction failures.
+Future step: hardware-in-the-loop: keep the same test harness but allow switching endpoint/credentials via env vars; CI runs the sim, self-hosted runner can point to real hardware.
+If you want, I can scaffold:
 
-Automate test execution in CI pipelines (e.g., GitHub Actions, Azure DevOps).
-Ensure tests run on every commit and pull request.
-Parameterize and Modularize Test Cases
-
-Use data-driven testing to cover more scenarios with less code.
-Refactor tests for reusability and maintainability.
-Tool Evaluation & Modernization
-
-Regularly review and update development tools and frameworks.
-Consider adopting new technologies (e.g., Playwright for UI, SpecFlow for BDD).
-Collaboration & Documentation
-
-Improve documentation for test strategies, setup, and usage.
-Foster collaboration between developers, testers, and stakeholders.
-TwinCAT Integration
-
-Enhance TwinCAT automation support, including simulation and hardware-in-the-loop testing.
-Automate deployment and monitoring of TwinCAT projects.
-Performance & Load Testing
-
-Add automated performance and stress tests for I/O systems and applications.
-Security Testing
-
-Integrate security checks and vulnerability scanning into the test process.
-Test Environment Management
-
-Automate provisioning and teardown of test environments using containers or cloud resources.
-
+A minimal OPC UA simulator helper for test runs (C# in tests folder).
+A new test class that exercises a “read/write round-trip” against the simulator.
+A CI job entry to run the sim tests.
 
 

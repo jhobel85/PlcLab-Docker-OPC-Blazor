@@ -4,25 +4,32 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
-using Opc.Ua.Client;
 using PlcLab.Application;
 using PlcLab.Application.Ports;
 using PlcLab.Domain;
 using Xunit;
+using Opc.Ua;
 
 namespace PlcLab.Web.Tests
 {
     [AllureSuite("TestRunOrchestrator")]
     public class TestRunOrchestratorTests        
     {
-        [Fact]
-            [AllureFeature("Test Plan Execution")]
-        public async Task ExecuteTestPlanAsync_ReturnsTestRunWithResults()
+        public static IEnumerable<object?[]> ExecutePlanScenarios() => new List<object?[]>
         {
-            // Arrange
-#pragma warning disable SYSLIB0050 // Type or member is obsolete
+            new object?[] { "success", false, false, true, null, 1 },
+            new object?[] { "read fails", true, false, false, "Signal ns=2;s=Signal1 read failed", 0 },
+            new object?[] { "null signals", false, true, true, null, 0 }
+        };
+
+        [Theory]
+        [MemberData(nameof(ExecutePlanScenarios))]
+        [AllureFeature("Test Plan Execution")]
+        public async Task ExecuteTestPlanAsync_Scenarios(string _scenario, bool throwsOnRead, bool signalsNull, bool expectedPassed, string? expectedMessageContains, int expectedSnapshots)
+        {
+#pragma warning disable SYSLIB0050
             var realSession = (Opc.Ua.Client.Session)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Opc.Ua.Client.Session));
-#pragma warning restore SYSLIB0050 // Type or member is obsolete
+#pragma warning restore SYSLIB0050
             var opcUaSessionStub = new TestOpcUaSession(realSession);
 
             var sessionFactoryMock = new Mock<IOpcUaSessionFactory>();
@@ -30,8 +37,75 @@ namespace PlcLab.Web.Tests
                 .ReturnsAsync(opcUaSessionStub);
 
             var readWritePortMock = new Mock<IReadWritePort>();
-            readWritePortMock.Setup(p => p.ReadValueAsync(realSession, It.IsAny<Opc.Ua.NodeId>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync("42");
+            if (throwsOnRead)
+            {
+                readWritePortMock.Setup(p => p.ReadValueAsync(realSession, It.IsAny<Opc.Ua.NodeId>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new InvalidOperationException("boom"));
+            }
+            else
+            {
+                readWritePortMock.Setup(p => p.ReadValueAsync(realSession, It.IsAny<Opc.Ua.NodeId>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync("42");
+            }
+
+            var orchestrator = new TestRunOrchestrator(sessionFactoryMock.Object, readWritePortMock.Object);
+            var testPlan = new TestPlan
+            {
+                Id = Guid.NewGuid(),
+                TestCases =
+                [
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        RequiredSignals = signalsNull
+                            ? null!
+                            : [new() { SignalName = "ns=2;s=Signal1" }]
+                    }
+                ]
+            };
+
+            // Act
+            var result = await orchestrator.ExecuteTestPlanAsync(testPlan, "opc.tcp://test", CancellationToken.None);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(testPlan.Id, result.TestPlanId);
+            Assert.Single(result.Results);
+
+            var caseResult = result.Results[0];
+            Assert.Equal(expectedPassed, caseResult.Passed);
+            Assert.Equal(expectedSnapshots, caseResult.Snapshots.Count);
+
+            if (expectedMessageContains == null)
+            {
+                Assert.Null(caseResult.Message);
+            }
+            else
+            {
+                Assert.NotNull(caseResult.Message);
+                Assert.Contains(expectedMessageContains, caseResult.Message);
+            }
+        }
+
+        [Fact]
+        [AllureFeature("OPC UA Simulation")]
+        public async Task ExecuteTestPlanAsync_UsesSimPlaceholder()
+        {
+            var sim = new OpcUaSim(new Dictionary<string, object?> { { "ns=2;s=SimulatedSignal", "99" } });
+            await sim.StartAsync();
+
+#pragma warning disable SYSLIB0050
+            var realSession = (Opc.Ua.Client.Session)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Opc.Ua.Client.Session));
+#pragma warning restore SYSLIB0050
+            var opcUaSessionStub = new TestOpcUaSession(realSession);
+
+            var sessionFactoryMock = new Mock<IOpcUaSessionFactory>();
+            sessionFactoryMock.Setup(f => f.CreateSessionAsync(It.IsAny<string>(), false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(opcUaSessionStub);
+
+            var readWritePortMock = new Mock<IReadWritePort>();
+            readWritePortMock.Setup(p => p.ReadValueAsync(realSession, It.IsAny<NodeId>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sim.GetValue("ns=2;s=SimulatedSignal")?.ToString() ?? "");
 
             var orchestrator = new TestRunOrchestrator(sessionFactoryMock.Object, readWritePortMock.Object);
             var testPlan = new TestPlan
@@ -39,41 +113,23 @@ namespace PlcLab.Web.Tests
                 Id = Guid.NewGuid(),
                 TestCases = new List<TestCase>
                 {
-                    new() {
+                    new()
+                    {
                         Id = Guid.NewGuid(),
                         RequiredSignals = new List<SignalSnapshot>
                         {
-                            // Use a valid OPC UA NodeId string
-                            new SignalSnapshot { SignalName = "ns=2;s=Signal1" }
+                            new() { SignalName = "ns=2;s=SimulatedSignal" }
                         }
                     }
                 }
             };
 
-            // Act
-            var result = await orchestrator.ExecuteTestPlanAsync(testPlan, "opc.tcp://test", CancellationToken.None);
+            var result = await orchestrator.ExecuteTestPlanAsync(testPlan, sim.EndpointUrl, CancellationToken.None);
 
-            // Debug output
-
-            if (result.Results.Count > 0)
-            {
-                var res = result.Results[0];
-                if (!res.Passed)
-                {
-                    var msg = $"TestCaseId: {res.TestCaseId}, Passed: {res.Passed}, Message: {res.Message}, Snapshots: {res.Snapshots.Count}";
-                    if (res.Snapshots.Count > 0)
-                        msg += $", Snapshot Value: {res.Snapshots[0].Value}";
-                    throw new Exception($"Test failed debug info: {msg}");
-                }
-            }
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal(testPlan.Id, result.TestPlanId);
             Assert.Single(result.Results);
-            Assert.True(result.Results[0].Passed);
-            Assert.Equal("ns=2;s=Signal1", result.Results[0].Snapshots[0].SignalName);
-            Assert.Equal("42", result.Results[0].Snapshots[0].Value);
+            var caseResult = result.Results[0];
+            Assert.True(caseResult.Passed);
+            Assert.Equal("99", caseResult.Snapshots[0].Value);
         }
 
         private class TestOpcUaSession : IOpcUaSession

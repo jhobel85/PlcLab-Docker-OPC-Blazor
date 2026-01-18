@@ -19,6 +19,14 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Restore
         run: dotnet restore
 
@@ -29,6 +37,21 @@ jobs:
         run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
         env:
           ALLURE_RESULTS_DIRECTORY: tests/PlcLab.Web.Tests/allure-results
+
+      - name: Collect coverage artifacts
+        shell: bash
+        run: |
+          mkdir -p coverage
+          find . -path "*TestResults*" -name "coverage.cobertura.xml" -print -exec cp {} coverage/ \; || true
+          if [ "$(ls -A coverage 2>/dev/null)" = "" ]; then
+            echo "No coverage files found" > coverage/NO_COVERAGE.txt
+          fi
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-cobertura
+          path: coverage
 
 
       - name: Publish Web App

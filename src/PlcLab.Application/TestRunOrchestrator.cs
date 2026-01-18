@@ -44,7 +44,8 @@ public class TestRunOrchestrator
         bool passed = true;
         string? message = null;
         var snapshots = new List<SignalSnapshot>();
-        foreach (var signal in testCase.RequiredSignals)
+        var signals = testCase.RequiredSignals ?? new List<SignalSnapshot>();
+        foreach (var signal in signals)
         {
             // Example: read value from OPC UA
             try
