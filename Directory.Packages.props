@@ -1,7 +1,7 @@
 <Project>
   <ItemGroup>
     <!-- OPC UA-->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.12">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
@@ -19,14 +19,14 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageVersion Include="OpenTelemetry" Version="1.8.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.8.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.8.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.8.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.8.0" />
     <!-- EF Core -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.12" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.12" />
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.2" />

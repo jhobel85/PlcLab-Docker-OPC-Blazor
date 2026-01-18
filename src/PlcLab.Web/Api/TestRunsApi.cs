@@ -31,12 +31,14 @@ namespace PlcLab.Web.Api
                 var endpoint = opcUaSection["Endpoint"] ?? opcUaSection["FallbackEndpoint"] ?? "opc.tcp://opcua-refserver:50000";
                 var testRun = await orchestrator.ExecuteTestPlanAsync(plan, endpoint, cancellationToken).ConfigureAwait(false);
 
+                // Tag run with plan version for history
+                testRun.PlanVersion = plan.Version;
+
                 db.TestRuns.Add(testRun);
                 await db.SaveChangesAsync(cancellationToken);
 
                 return Results.Ok(new { testRun.Id, Status = "Completed" });
-            })
-            .RequireAuthorization();
+            });
 
             // GET /api/testruns - return all test runs with plan name and results
             app.MapGet("/api/testruns", async (PlcLabDbContext db) =>

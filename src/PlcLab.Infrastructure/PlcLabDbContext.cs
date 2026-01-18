@@ -18,7 +18,8 @@ public class PlcLabDbContext : DbContext
         // Configure relationships and keys as needed
         modelBuilder.Entity<TestPlan>()
             .HasMany(tp => tp.TestCases)
-            .WithOne()
+            .WithOne(tc => tc.TestPlan)
+            .HasForeignKey(tc => tc.TestPlanId)
             .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<TestRun>()
             .HasMany(tr => tr.Results)

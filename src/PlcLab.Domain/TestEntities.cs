@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace PlcLab.Domain;
 
 public class TestPlan
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public int Version { get; set; } = 1;
     public List<TestCase> TestCases { get; set; } = new();
 }
 
@@ -13,12 +16,16 @@ public class TestCase
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<SignalSnapshot> RequiredSignals { get; set; } = new();
+    public Guid TestPlanId { get; set; } // FK for TestPlan
+    [JsonIgnore]
+    public TestPlan TestPlan { get; set; } = null!; // Navigation property
 }
 
 public class TestRun
 {
     public Guid Id { get; set; }
     public Guid TestPlanId { get; set; }
+    public int PlanVersion { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
     public List<TestResult> Results { get; set; } = new();

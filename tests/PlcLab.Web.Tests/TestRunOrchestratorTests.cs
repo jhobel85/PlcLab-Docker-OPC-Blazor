@@ -27,6 +27,8 @@ namespace PlcLab.Web.Tests
         [AllureFeature("Test Plan Execution")]
         public async Task ExecuteTestPlanAsync_Scenarios(string _scenario, bool throwsOnRead, bool signalsNull, bool expectedPassed, string? expectedMessageContains, int expectedSnapshots)
         {
+            // Use scenario name for test output or debugging
+            System.Diagnostics.Debug.WriteLine($"Running scenario: {_scenario}");
 #pragma warning disable SYSLIB0050
             var realSession = (Opc.Ua.Client.Session)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Opc.Ua.Client.Session));
 #pragma warning restore SYSLIB0050

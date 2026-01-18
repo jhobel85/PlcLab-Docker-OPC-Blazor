@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlcLab.Infrastructure;
@@ -11,9 +12,11 @@ using PlcLab.Infrastructure;
 namespace PlcLab.Infrastructure.Migrations
 {
     [DbContext(typeof(PlcLabDbContext))]
-    partial class PlcLabDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260118152256_PlanVersioning")]
+    partial class PlanVersioning
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,7 +70,7 @@ namespace PlcLab.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("TestPlanId")
+                    b.Property<Guid?>("TestPlanId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -160,13 +163,10 @@ namespace PlcLab.Infrastructure.Migrations
 
             modelBuilder.Entity("PlcLab.Domain.TestCase", b =>
                 {
-                    b.HasOne("PlcLab.Domain.TestPlan", "TestPlan")
+                    b.HasOne("PlcLab.Domain.TestPlan", null)
                         .WithMany("TestCases")
                         .HasForeignKey("TestPlanId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TestPlan");
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("PlcLab.Domain.TestResult", b =>
