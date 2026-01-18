@@ -1,32 +1,61 @@
-name: Allure Report to GitHub Pages
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy allure static content to Pages
 
 on:
+  # Runs on pushes targeting the default branch
   push:
-    branches: [ main ]
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: write  # required to push to gh-pages
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  allure-test-and-publish:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+
       - name: Restore
         run: dotnet restore PlcLab-Docker-OPC-Blazor.sln
+
       - name: Test
         run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
+
+      - name: Install Allure CLI
+        run: npm install -g allure-commandline --registry=https://registry.npmjs.org
+
       - name: Generate Allure report
-        run: |
-          npx allure generate tests/PlcLab.Web.Tests/allure-results -o allure-report --clean || true
-      - name: Deploy Allure report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        run: allure generate tests/PlcLab.Web.Tests/allure-results -o allure-report --clean || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact (Allure report)
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: allure-report
-          publish_branch: gh-pages
-          force_orphan: true
+          path: allure-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
