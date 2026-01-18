@@ -1,0 +1,29 @@
+name: Allure Report to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  allure-test-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore PlcLab-Docker-OPC-Blazor.sln
+      - name: Test
+        run: dotnet test tests/PlcLab.Web.Tests/PlcLab.Web.Tests.csproj --logger "trx;LogFileName=test-results.trx"
+      - name: Generate Allure report
+        run: |
+          npx allure generate tests/PlcLab.Web.Tests/allure-results -o allure-report --clean || true
+      - name: Deploy Allure report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-report
+          publish_branch: gh-pages
+          force_orphan: true
