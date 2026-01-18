@@ -1,19 +1,23 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using PlcLab.Infrastructure;
-using PlcLab.Domain;
 using PlcLab.Application;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace PlcLab.Web.Api
 {
     public static class TestRunsApi
     {
         public static void MapTestRunsApi(WebApplication app)
         {
+            // DELETE /api/testruns/{id} - delete a test run and its results
+            app.MapDelete("/api/testruns/{id}", async (Guid id, PlcLabDbContext db, CancellationToken cancellationToken) =>
+            {
+                var run = await db.TestRuns.Include(r => r.Results).FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+                if (run == null)
+                    return Results.NotFound();
+                db.TestRuns.Remove(run);
+                await db.SaveChangesAsync(cancellationToken);
+                return Results.NoContent();
+            });
+
             app.MapPost("/api/testruns", async (
                 TestRunRequest req,
                 PlcLabDbContext db,
@@ -54,6 +58,7 @@ namespace PlcLab.Web.Api
                     .ToDictionaryAsync(p => p.Id, p => p.Name);
                 var dtos = runs.Select(r => new TestRunDto
                 {
+                    Id = r.Id,
                     PlanName = plans.TryGetValue(r.TestPlanId, out var name) ? name : "",
                     StartedAt = r.StartedAt,
                     EndedAt = r.EndedAt,
@@ -62,21 +67,27 @@ namespace PlcLab.Web.Api
                 return Results.Ok(dtos);
             });
         }
-        public class TestRunDto
-        {
-            public string PlanName { get; set; } = string.Empty;
-            public DateTime StartedAt { get; set; }
-            public DateTime? EndedAt { get; set; }
-            public List<TestResultDto> Results { get; set; } = new();
-        }
-        public class TestResultDto
-        {
-            public bool Passed { get; set; }
-        }
-
-        public class TestRunRequest
-        {
-            public Guid TestPlanId { get; set; }
-        }
     }
 }
+
+// DTOs must be outside the namespace and after all type declarations
+
+public class TestRunDto
+{
+    public Guid Id { get; set; }
+    public string PlanName { get; set; } = string.Empty;
+    public DateTime StartedAt { get; set; }
+    public DateTime? EndedAt { get; set; }
+    public List<TestResultDto> Results { get; set; } = new();
+}
+
+public class TestResultDto
+{
+    public bool Passed { get; set; }
+}
+
+public class TestRunRequest
+{
+    public Guid TestPlanId { get; set; }
+}
+

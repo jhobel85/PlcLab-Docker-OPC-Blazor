@@ -19,6 +19,7 @@ else
                 <th>Run Date</th>
                 <th>Status</th>
                 <th>Details</th>
+                <th>Delete</th>
             </tr>
         </thead>
         <tbody>
@@ -29,6 +30,7 @@ else
                     <td>@r.RunDate.ToString("g", CultureInfo.CurrentCulture)</td>
                     <td>@r.Status</td>
                     <td><button class="btn btn-sm btn-link" @onclick="() => ShowDetails(r)">View</button></td>
+                    <td><button class="btn btn-sm btn-danger" @onclick="() => DeleteResult(r)">Delete</button></td>
                 </tr>
             }
         </tbody>
@@ -70,6 +72,7 @@ else
             var runs = await client.GetFromJsonAsync<List<TestRunDto>>("api/testruns");
             Results = runs?.Select(r => new Result
             {
+                Id = r.Id, // Set the Id so delete works
                 PlanName = r.PlanName,
                 RunDate = r.StartedAt.ToLocalTime(),
                 Status = r.EndedAt == null ? "Running" : (r.Results.All(x => x.Passed) ? "Passed" : "Failed"),
@@ -85,6 +88,7 @@ else
 
     public class TestRunDto
     {
+        public Guid Id { get; set; }
         public string PlanName { get; set; } = string.Empty;
         public DateTime StartedAt { get; set; }
         public DateTime? EndedAt { get; set; }
@@ -109,9 +113,32 @@ else
 
     public class Result
     {
+        public Guid Id { get; set; }
         public string PlanName { get; set; } = string.Empty;
         public DateTime RunDate { get; set; }
         public string Status { get; set; } = string.Empty;
         public string Summary { get; set; } = string.Empty;
+    }
+    private async Task DeleteResult(Result r)
+    {
+        if (r == null || r.Id == Guid.Empty)
+            return;
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            var resp = await client.DeleteAsync($"api/testruns/{r.Id}");
+            if (resp.IsSuccessStatusCode)
+            {
+                await RefreshData();
+            }
+            else
+            {
+                Console.Error.WriteLine($"Failed to delete test run: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Exception deleting test run: {ex.Message}");
+        }
     }
 }
