@@ -30,11 +30,6 @@ jobs:
         env:
           ALLURE_OUTPUT: tests/PlcLab.Web.Tests/allure-results
 
-      - name: Upload Allure results
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: tests/PlcLab.Web.Tests/allure-results
 
       - name: Publish Web App
         run: dotnet publish src/PlcLab.Web -c Release -o out
