@@ -22,4 +22,10 @@
     <ProjectReference Include="..\..\src\PlcLab.Infrastructure\PlcLab.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="allureConfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

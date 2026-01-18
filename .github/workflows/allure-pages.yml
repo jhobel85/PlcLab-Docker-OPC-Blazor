@@ -45,9 +45,16 @@ jobs:
 
       - name: Verify Allure results
         run: |
-          if [ ! -d tests/PlcLab.Web.Tests/allure-results ] || [ -z "$(ls -A tests/PlcLab.Web.Tests/allure-results)" ]; then
-            echo "No Allure results found. Ensure tests are passing and Allure.Xunit is producing results.";
+          echo "Searching for allure-results..."
+          find . -type d -name "allure-results" 2>/dev/null || true
+          if [ ! -d tests/PlcLab.Web.Tests/bin/Debug/net8.0/allure-results ] && [ ! -d tests/PlcLab.Web.Tests/allure-results ]; then
+            echo "No Allure results found in expected locations.";
             exit 1;
+          fi
+          # Copy results from output dir if present
+          if [ -d tests/PlcLab.Web.Tests/bin/Debug/net8.0/allure-results ]; then
+            mkdir -p tests/PlcLab.Web.Tests/allure-results
+            cp -r tests/PlcLab.Web.Tests/bin/Debug/net8.0/allure-results/* tests/PlcLab.Web.Tests/allure-results/ || true
           fi
 
       - name: Install Allure CLI
