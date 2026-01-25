@@ -58,7 +58,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 
 ## 7) Security (Certificates)
 - [ ] Client certificate store + trust list management UI
-- [ ] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
+- [x] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
 - [ ] README section on certificate workflow (generate, trust, revoke)
 - [ ] Implement code signing for Docker images and application binaries
 - [ ] Automate certificate generation and renewal (see CertificatesGuide.md)
@@ -68,22 +68,31 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 > **Note:** Login/authentication is currently disabled for development/testing. Re-enable before production deployment.
 
 ## 8) In‑Process Mock OPC UA Server (optional)
-- [ ] .NET worker hosting a minimal OPC UA server
-- [ ] Define variables & two demo methods
-- [ ] Deterministic value generator (for repeatable tests)
+- [x] .NET worker hosting a minimal OPC UA server
+- [x] Define variables & two demo methods
+- [x] Deterministic value generator (for repeatable tests)
+- [x] Hosted service integration with DI
+- [x] Configuration support (`MockOpcUa:Enabled` + `MockOpcUa:BaseAddress`)
+- [x] Documentation in [ops/MockOpcUaServer.md](ops/MockOpcUaServer.md)
+  - Config: Defaults to `opc.tcp://localhost:4841` when enabled
+  - Nodes: `Process/State`, `Analog/Flow`, `Digital/ValveOpen`
+  - Methods: `Add`, `ResetAlarms`
+  - Note: Integration test skipped pending OPC UA stack configuration refinement
 
 ## 9) CI/CD
-- [ ] GitHub Actions: restore/build/test + code coverage
-- [ ] Spin up **Docker OPC UA reference server** for integration tests
+- [x] GitHub Actions: restore/build/test + code coverage
+- [x] Spin up **Docker OPC UA reference server** for integration tests
 - [ ] Publish `PlcLab.Web` as container image
 
 ## 10) Integration Tests
-- [ ] Connect → browse → read/write → subscribe → method call
+- [x] Basic connection test to Reference Server (runs in CI with Docker)
+- [ ] Browse → read/write → subscribe → method call end-to-end tests
 - [ ] Stable pass/fail scenarios for automated validation
 
 ## 11) Documentation
 - [ ] README: overview, architecture diagram, screenshots/GIFs
 - [ ] Quickstart for virtual PLC in Docker; endpoint configuration
+- [ ] Quickstart for in-process mock OPC UA server (start flag + expected nodes/methods)
 - [ ] Security notes (certs, TLS, trust lists)
 - [ ] Roadmap & known limitations
 

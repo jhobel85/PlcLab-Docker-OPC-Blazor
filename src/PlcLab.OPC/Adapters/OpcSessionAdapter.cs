@@ -28,7 +28,7 @@ namespace PlcLab.OPC.Adapters
                 ApplicationType = ApplicationType.Client,
                 SecurityConfiguration = new SecurityConfiguration
                 {
-                    AutoAcceptUntrustedCertificates = true,
+                    AutoAcceptUntrustedCertificates = false,
                     ApplicationCertificate = new CertificateIdentifier
                     {
                         StoreType = "Directory",

@@ -33,10 +33,21 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
+      - name: Start OPC UA Reference Server
+        run: |
+          docker compose up -d opcua-refserver
+          echo "Waiting for OPC UA Reference Server to be ready..."
+          sleep 10
+          docker compose ps
+
       - name: Test
         run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
         env:
           ALLURE_RESULTS_DIRECTORY: tests/PlcLab.Web.Tests/allure-results
+
+      - name: Stop OPC UA Reference Server
+        if: always()
+        run: docker compose down
 
       - name: Collect coverage artifacts
         shell: bash

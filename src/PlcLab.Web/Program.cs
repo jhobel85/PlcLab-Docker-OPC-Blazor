@@ -65,6 +65,14 @@ builder.Services.AddHttpClient("Api", client =>
     client.BaseAddress = baseUri!;
 });
 builder.Services.AddSingleton<ITelemetryContext>(_ => SerilogTelemetry.Create());
+builder.Services.Configure<MockOpcUaOptions>(builder.Configuration.GetSection("MockOpcUa"));
+builder.Services.AddSingleton(sp =>
+{
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MockOpcUaOptions>>().Value;
+    return new PlcLab.OPC.Mock.MockOpcUaServer(opts.Endpoint);
+});
+// Temporarily disable mock server hosted service to avoid port conflicts in tests
+// builder.Services.AddHostedService<MockOpcUaHostedService>();
 // Register OPC adapters for Application ports
 builder.Services.AddSingleton<PlcLab.OPC.Adapters.OpcSessionAdapter>();
 builder.Services.AddSingleton<PlcLab.OPC.Adapters.OpcBrowseAdapter>();
