@@ -82,7 +82,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 ## 9) CI/CD
 - [x] GitHub Actions: restore/build/test + code coverage
 - [x] Spin up **Docker OPC UA reference server** for integration tests
-- [ ] Publish `PlcLab.Web` as container image
+- [x] Publish `PlcLab.Web` as container image (GitHub Container Registry)
 
 ## 10) Integration Tests
 - [x] Basic connection test to Reference Server (runs in CI with Docker)
@@ -102,7 +102,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] M1: Repo scaffold + Docker ref server + basic connect/browse
 - [x] M2: Subscriptions + Run Wizard + minimal persistence
 - [x] M3: Method calls + Results Explorer + export
-- [ ] M4: CI pipeline + integration tests (virtual PLC)
+- [x] M4: CI pipeline + container publishing + integration tests (virtual PLC)
 - [ ] M5 (optional): In‑process mock server + extra UI polish
 
 ## Nice-to-haves
@@ -123,7 +123,9 @@ This folder contains operational docs and snippets to manage the PlcLab project 
 Quick links:
 - [ReleaseChecklist.md](ops/ReleaseChecklist.md)
 - [CHANGELOG.md](ops/CHANGELOG.md)
-- [CreateTagAndPush.md](ops/CreateTagAndPush.md)
+- [CreateTagAndPushRelease.md](ops/CreateTagAndPushRelease.md) — How to version and publish releases
+- [PublishContainerImage.md](ops/PublishContainerImage.md) — Docker image publishing and registry operations
+- [DockerAndDeploymentArchitecture.md](ops/DockerAndDeploymentArchitecture.md) — Deployment models, K8s, scaling
 - [DockerBuildAndPush.md](ops/DockerBuildAndPush.md)
 - [LocalTestWithDocker.md](ops/LocalTestWithDocker.md)
 - [DevSetup.md](ops/DevSetup.md)
@@ -134,3 +136,4 @@ Quick links:
 - [DeployToAzure.md](ops/DeployToAzure.md)
 - [DeployToK8s.md](ops/DeployToK8s.md)
 - [Rollback.md](ops/Rollback.md)
+- [MockOpcUaServer.md](ops/MockOpcUaServer.md) — In-process mock OPC UA server for testing
