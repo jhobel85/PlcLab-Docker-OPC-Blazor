@@ -76,7 +76,12 @@ public class Solidtests
         var classes = Types.InAssemblies(ProjectAssemblies)
             .That().AreClasses()
             .GetTypes()
-            .Where(t => t.Namespace != null && t.Namespace.StartsWith("PlcLab") && t.Name != "IndexViewModel" && t.Name != "PlcLabDbContext");
+            .Where(t => t.Namespace != null 
+                && t.Namespace.StartsWith("PlcLab") 
+                && t.Name != "IndexViewModel" 
+                && t.Name != "PlcLabDbContext"
+                && !t.Name.Contains("MockStandardServer")   // Inherits from SDK StandardServer
+                && !t.Name.Contains("MockNodeManager"));    // Inherits from SDK CustomNodeManager2
         foreach (var cls in classes)
         {
             var methodCount = cls.GetMethods().Length;

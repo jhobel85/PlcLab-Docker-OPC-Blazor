@@ -77,7 +77,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
   - Config: Defaults to `opc.tcp://localhost:4841` when enabled
   - Nodes: `Process/State`, `Analog/Flow`, `Digital/ValveOpen`
   - Methods: `Add`, `ResetAlarms`
-  - Note: Integration test skipped pending OPC UA stack configuration refinement
+  - Note: Integration test skipped (uses Reference Server in CI instead) — mock server available for local development
 
 ## 9) CI/CD
 - [x] GitHub Actions: restore/build/test + code coverage
@@ -87,7 +87,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 ## 10) Integration Tests
 - [x] Basic connection test to Reference Server (runs in CI with Docker)
 - [x] Browse → read/write → subscribe → method call end-to-end tests
-- [ ] Stable pass/fail scenarios for automated validation
+- [x] Stable pass/fail scenarios for automated validation
 
 ## 11) Documentation
 - [ ] README: overview, architecture diagram, screenshots/GIFs
