@@ -86,7 +86,7 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 
 ## 10) Integration Tests
 - [x] Basic connection test to Reference Server (runs in CI with Docker)
-- [ ] Browse → read/write → subscribe → method call end-to-end tests
+- [x] Browse → read/write → subscribe → method call end-to-end tests
 - [ ] Stable pass/fail scenarios for automated validation
 
 ## 11) Documentation
