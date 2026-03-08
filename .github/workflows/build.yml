@@ -76,7 +76,7 @@ jobs:
         run: dotnet publish src/PlcLab.Web -c Release -o out
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
