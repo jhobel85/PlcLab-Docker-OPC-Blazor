@@ -67,7 +67,7 @@ public class CertificatesApiTests
         try
         {
             var rejectedPath = Path.Combine(pkiRoot, "rejected", "move-me.cer");
-            var trustedPath = Path.Combine(pkiRoot, "trusted", "move-me.cer");
+            var trustedPath = Path.Combine(pkiRoot, "trusted", "certs", "move-me.cer");
             WriteCertificateFile(rejectedPath, "CN=PromoteMe");
 
             await using var app = await CreateTestAppAsync(pkiRoot);
@@ -94,7 +94,7 @@ public class CertificatesApiTests
         try
         {
             var trustedPath = Path.Combine(pkiRoot, "trusted", "reject-me.cer");
-            var rejectedPath = Path.Combine(pkiRoot, "rejected", "reject-me.cer");
+            var rejectedPath = Path.Combine(pkiRoot, "rejected", "certs", "reject-me.cer");
             WriteCertificateFile(trustedPath, "CN=RejectMe");
 
             await using var app = await CreateTestAppAsync(pkiRoot);

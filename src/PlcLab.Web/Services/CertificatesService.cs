@@ -31,6 +31,8 @@ public sealed class CertificatesService
 
     public async Task PromoteAsync(string fileName, CancellationToken ct = default)
     {
+        ValidateFileName(fileName);
+
         var pkiRoot = ResolvePkiRoot();
         var trustedDir = EnsureDirectory(Path.Combine(pkiRoot, "trusted"));
         var rejectedDir = EnsureDirectory(Path.Combine(pkiRoot, "rejected"));
@@ -48,6 +50,8 @@ public sealed class CertificatesService
 
     public async Task RejectAsync(string fileName, CancellationToken ct = default)
     {
+        ValidateFileName(fileName);
+
         var pkiRoot = ResolvePkiRoot();
         var trustedDir = EnsureDirectory(Path.Combine(pkiRoot, "trusted"));
         var rejectedDir = EnsureDirectory(Path.Combine(pkiRoot, "rejected"));
@@ -63,6 +67,8 @@ public sealed class CertificatesService
 
     public void DeleteRejected(string fileName)
     {
+        ValidateFileName(fileName);
+
         var pkiRoot = ResolvePkiRoot();
         var rejectedDir = EnsureDirectory(Path.Combine(pkiRoot, "rejected"));
 
@@ -176,13 +182,17 @@ public sealed class CertificatesService
 
     internal static string BuildSafePath(string directoryPath, string fileName)
     {
+        ValidateFileName(fileName);
+        return Path.Combine(directoryPath, fileName);
+    }
+
+    private static void ValidateFileName(string fileName)
+    {
         if (string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("File name is required.", nameof(fileName));
 
         var safeName = Path.GetFileName(fileName);
         if (!string.Equals(safeName, fileName, StringComparison.Ordinal))
             throw new ArgumentException("Invalid file name.", nameof(fileName));
-
-        return Path.Combine(directoryPath, safeName);
     }
 }
