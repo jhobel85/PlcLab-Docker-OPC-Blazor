@@ -20,6 +20,12 @@
         }
     }
 
+    private async Task OnUseSecurityChanged(ChangeEventArgs e)
+    {
+        ViewModel.UseSecurity = e.Value is true;
+        await ReconnectAndUpdate();
+    }
+
     private async Task ReconnectAndUpdate()
     {
         await ViewModel.ReconnectAsync();
@@ -35,6 +41,14 @@
         <option value="opc.tcp://127.0.0.1:4840">Virtual PLC (127.0.0.1:4840 - localhost)</option>
         <option value="opc.tcp://localhost:4841">In-process Mock Server</option>
     </select>
+    <div class="form-check form-switch d-inline-flex align-items-center gap-2 ms-3">
+        <input class="form-check-input" type="checkbox" role="switch" id="useSecuritySwitch"
+               checked="@ViewModel.UseSecurity"
+               @onchange="OnUseSecurityChanged" />
+        <label class="form-check-label" for="useSecuritySwitch">
+            Use TLS/Certificate security
+        </label>
+    </div>
     <button class="btn btn-sm btn-primary ms-2" @onclick="ReconnectAndUpdate" disabled="@ViewModel.IsConnecting">Reconnect</button>
 </div>
 <div class="my-2">

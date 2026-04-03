@@ -93,6 +93,7 @@ builder.Services.AddScoped<IndexViewModel>();
 builder.Services.AddScoped<OpcUaEndpointService>();
 builder.Services.AddSingleton<IOpcConnectionService, ConnectionStatusService>();
 builder.Services.AddScoped<ISeedDataClient, SeedDataClient>();
+builder.Services.AddScoped<PlcLab.Web.Services.CertificatesService>();
 // Register Application ports for orchestrator and other consumers
 builder.Services.AddSingleton<PlcLab.Application.Ports.IOpcSessionPort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcSessionAdapter>());
 builder.Services.AddSingleton<PlcLab.Application.Ports.IBrowsePort>(sp => sp.GetRequiredService<PlcLab.OPC.Adapters.OpcBrowseAdapter>());
@@ -121,6 +122,7 @@ using (var scope = app.Services.CreateScope())
 SeedInfoApi.MapSeedInfoEndpoint(app);
 TestPlansApi.MapTestPlansApi(app);
 TestRunsApi.MapTestRunsApi(app);
+CertificatesApi.MapCertificatesApi(app);
 app.UseHttpsRedirection();
 // app.UseAuthentication();
 // app.UseAuthorization();

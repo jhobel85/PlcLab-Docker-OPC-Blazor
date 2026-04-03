@@ -81,7 +81,10 @@ public class Solidtests
                 && t.Name != "IndexViewModel" 
                 && t.Name != "PlcLabDbContext"
                 && !t.Name.Contains("MockStandardServer")   // Inherits from SDK StandardServer
-                && !t.Name.Contains("MockNodeManager"));    // Inherits from SDK CustomNodeManager2
+                && !t.Name.Contains("MockNodeManager")      // Inherits from SDK CustomNodeManager2
+                && !t.Name.Contains("Response")             // DTO records with auto-generated methods
+                && !t.Name.Contains("Request")              // DTO records with auto-generated methods
+                && !t.Name.Contains("Entry"));              // DTO records with auto-generated methods
         foreach (var cls in classes)
         {
             var methodCount = cls.GetMethods().Length;

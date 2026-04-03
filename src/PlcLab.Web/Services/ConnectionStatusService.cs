@@ -14,7 +14,7 @@ namespace PlcLab.Web.Services
         bool IsConnecting { get; }
         int SessionVersion { get; }
         string ClientApplicationName { get; }
-        Task TryConnectAsync(string endpoint, CancellationToken cancellationToken = default);
+        Task TryConnectAsync(string endpoint, bool useSecurity = false, CancellationToken cancellationToken = default);
         Task CloseAsync();
     }
 
@@ -41,12 +41,12 @@ namespace PlcLab.Web.Services
         public int SessionVersion => _sessionVersion;
         public string ClientApplicationName => _sessionPort.GetApplicationName();
 
-        public async Task TryConnectAsync(string endpoint, CancellationToken cancellationToken = default)
+        public async Task TryConnectAsync(string endpoint, bool useSecurity = false, CancellationToken cancellationToken = default)
         {
             await _connectLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                await ConnectInternalAsync(endpoint, cancellationToken).ConfigureAwait(false);
+                await ConnectInternalAsync(endpoint, useSecurity, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -59,17 +59,18 @@ namespace PlcLab.Web.Services
             await CloseCurrentSessionAsync().ConfigureAwait(false);
         }
 
-        private async Task ConnectInternalAsync(string endpoint, CancellationToken cancellationToken)
+        private async Task ConnectInternalAsync(string endpoint, bool useSecurity, CancellationToken cancellationToken)
         {
             _isConnecting = true;
             using var activity = ActivitySource.StartActivity("OpcUaConnect");
             activity?.SetTag("opc.endpoint", endpoint);
+            activity?.SetTag("opc.useSecurity", useSecurity);
 
             try
             {
                 await CloseCurrentSessionAsync().ConfigureAwait(false);
 
-                var session = await _sessionPort.CreateSessionAsync(endpoint, useSecurity: false, cancellationToken)
+                var session = await _sessionPort.CreateSessionAsync(endpoint, useSecurity, cancellationToken)
                     .ConfigureAwait(false);
 
                 _currentSession = session;

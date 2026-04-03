@@ -6,9 +6,12 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - OpcUa__Endpoint=opc.tcp://opcua-refserver:50000
+      - OpcUa__PkiRootPath=/app/pki
       - Seed__Enabled=true
       - ASPNETCORE_ENVIRONMENT=Development
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ./pki:/app/pki
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,6 +38,8 @@ services:
       retries: 5
   opcua-refserver:
     image: mcr.microsoft.com/iotedge/opc-plc:latest
+    container_name: opcua-refserver
+    hostname: opcua-refserver
     ports:
       - "4840:50000"
     restart: unless-stopped

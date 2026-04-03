@@ -29,6 +29,7 @@ namespace PlcLab.Web.ViewModel
         public double? AddResult { get; private set; }
         public string AddError { get; private set; } = string.Empty;
         public string SelectedEndpoint { get; set; }
+        public bool UseSecurity { get; set; } = false;
 
         public int OpcUaSessionKey { get; private set; } = 0;
         public IndexViewModel(
@@ -112,7 +113,7 @@ namespace PlcLab.Web.ViewModel
 
         public async Task TryConnectAsync()
         {
-            await _connectionService.TryConnectAsync(SelectedEndpoint).ConfigureAwait(false);
+            await _connectionService.TryConnectAsync(SelectedEndpoint, UseSecurity).ConfigureAwait(false);
             await LoadSeedInfoAsync().ConfigureAwait(false);
             ObserveSessionChanges();
         }

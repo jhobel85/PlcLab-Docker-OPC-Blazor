@@ -1,0 +1,212 @@
+@using PlcLab.Web.Api
+@using PlcLab.Web.Services
+@inject CertificatesService CertSvc
+
+<h4>Certificate Trust List</h4>
+<p class="text-muted">Manage OPC UA client trust stores directly from the web UI.</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger">@_errorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_statusMessage))
+{
+    <div class="alert alert-success">@_statusMessage</div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <span class="badge text-bg-secondary">PKI Root: @_inventory?.PkiRoot</span>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="LoadAsync">Refresh</button>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-6">
+        <h5>Trusted</h5>
+        @if (_inventory?.Trusted.Count > 0)
+        {
+            <table class="table table-sm table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Subject</th>
+                        <th>Valid To (UTC)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cert in _inventory.Trusted)
+                    {
+                        <tr>
+                            <td>@cert.FileName</td>
+                            <td class="small">@((cert.Subject ?? "n/a").Length > 40 ? (cert.Subject ?? "n/a")[..40] + "..." : cert.Subject ?? "n/a")</td>
+                            <td>@(cert.NotAfterUtc?.ToString("u") ?? "n/a")</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => RejectAsync(cert.FileName)">Reject</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-secondary border">
+                <strong>No trusted certificates yet.</strong><br />
+                Server certificates land in <em>Rejected</em> on first contact — use <strong>Trust</strong> to promote them here.
+            </div>
+        }
+    </div>
+
+    <div class="col-12 col-xl-6">
+        <h5>Rejected</h5>
+        @if (_inventory?.Rejected.Count > 0)
+        {
+            <table class="table table-sm table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Thumbprint</th>
+                        <th>Seen (UTC)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cert in _inventory.Rejected)
+                    {
+                        <tr>
+                            <td>@cert.FileName</td>
+                            <td class="small">@((cert.Thumbprint ?? "n/a").Length > 20 ? (cert.Thumbprint ?? "n/a")[..20] + "..." : cert.Thumbprint ?? "n/a")</td>
+                            <td>@cert.LastWriteUtc.ToString("u")</td>
+                            <td class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => PromoteAsync(cert.FileName)">Trust</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRejectedAsync(cert.FileName)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-secondary border">
+                <strong>No rejected certificates.</strong><br />
+                Connect to an OPC UA endpoint — unknown server certificates will appear here automatically for review.<br />
+                <span class="text-muted small">To test manually: copy any <code>.der</code>/<code>.cer</code> file into <code>pki/rejected/</code>.</span>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="mt-4">
+    <h5>Own (Client Identity)</h5>
+    <p class="text-muted small mb-2">
+        These are local client identity certificates from <code>pki/own</code>. They are not promoted/rejected in the trust flow.
+    </p>
+    @if (_inventory?.Own.Count > 0)
+    {
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Subject</th>
+                    <th>Thumbprint</th>
+                    <th>Valid To (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cert in _inventory.Own)
+                {
+                    <tr>
+                        <td>@cert.FileName</td>
+                        <td class="small">@((cert.Subject ?? "n/a").Length > 48 ? (cert.Subject ?? "n/a")[..48] + "..." : cert.Subject ?? "n/a")</td>
+                        <td class="small">@((cert.Thumbprint ?? "n/a").Length > 20 ? (cert.Thumbprint ?? "n/a")[..20] + "..." : cert.Thumbprint ?? "n/a")</td>
+                        <td>@(cert.NotAfterUtc?.ToString("u") ?? "n/a")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-secondary border">No own certificates found in <code>pki/own</code>.</div>
+    }
+</div>
+
+@code {
+    private CertificateInventoryResponse? _inventory;
+    private string? _errorMessage;
+    private string? _statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private Task LoadAsync()
+    {
+        _errorMessage = null;
+        _statusMessage = null;
+
+        try
+        {
+            _inventory = CertSvc.GetInventory();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load certificates: {ex.Message}";
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task PromoteAsync(string fileName)
+    {
+        _errorMessage = null;
+        _statusMessage = null;
+        try
+        {
+            await CertSvc.PromoteAsync(fileName);
+            _statusMessage = "Certificate moved to trusted list.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Action failed: {ex.Message}";
+        }
+    }
+
+    private async Task RejectAsync(string fileName)
+    {
+        _errorMessage = null;
+        _statusMessage = null;
+        try
+        {
+            await CertSvc.RejectAsync(fileName);
+            _statusMessage = "Certificate moved to rejected list.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Action failed: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteRejectedAsync(string fileName)
+    {
+        _errorMessage = null;
+        _statusMessage = null;
+        try
+        {
+            CertSvc.DeleteRejected(fileName);
+            _statusMessage = "Rejected certificate removed.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Delete failed: {ex.Message}";
+        }
+    }
+}

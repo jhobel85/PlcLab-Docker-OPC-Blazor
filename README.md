@@ -57,15 +57,44 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Theme: basic CSS or MudBlazor (if allowed)
 
 ## 7) Security (Certificates)
-- [ ] Client certificate store + trust list management UI
+- [x] Client certificate store + trust list management UI
 - [x] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
-- [ ] README section on certificate workflow (generate, trust, revoke)
+- [x] README section on certificate workflow (generate, trust, revoke)
 - [ ] Implement code signing for Docker images and application binaries
-- [ ] Automate certificate generation and renewal (see CertificatesGuide.md)
+- [x] Automate certificate generation and renewal (see CertificatesGuide.md)
 - [ ] Integrate signing into CI/CD pipeline
 - [ ] Document signing process in project docs
 - [ ] Add verification steps to deployment scripts
 > **Note:** Login/authentication is currently disabled for development/testing. Re-enable before production deployment.
+
+### Certificate workflow (generate, trust, revoke)
+
+Client PKI folders are under `pki/` (or `/app/pki` in container):
+- `pki/own` - client certificate/private key
+- `pki/trusted` - trusted server certificates
+- `pki/rejected` - untrusted/rejected certificates awaiting review
+
+Use the new **Certificates** tab in the UI to:
+- review trusted and rejected certificates
+- promote a rejected certificate to trusted
+- move a trusted certificate back to rejected
+- delete rejected certificate files
+
+Generate or rotate the client certificate (PowerShell):
+
+```powershell
+pwsh ./scripts/Rotate-OpcUaClientCertificate.ps1 -PkiRoot ./pki -Force
+```
+
+The script creates `client.current.cer`, `client.current.pfx`, and `client.current.password.txt` in `pki/own` and archives older current files.
+
+Typical trust flow:
+1. Rotate/generate client certificate.
+2. Start PlcLab and connect to OPC UA endpoint.
+3. If server cert is untrusted, it appears in `Rejected`.
+4. Verify thumbprint/subject out-of-band.
+5. Promote to `Trusted`.
+6. If a cert is compromised/obsolete, move it back to rejected and delete it.
 
 ## 8) In‑Process Mock OPC UA Server (optional)
 - [x] .NET worker hosting a minimal OPC UA server

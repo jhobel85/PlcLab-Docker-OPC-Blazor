@@ -32,7 +32,7 @@ namespace PlcLab.Web.Tests
         public async Task TryConnectAsync_UpdatesStatus()
         {
             var (vm, connectionMock, seedMock) = CreateViewModel();
-            connectionMock.Setup(c => c.TryConnectAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            connectionMock.Setup(c => c.TryConnectAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
             connectionMock.SetupGet(c => c.Status).Returns("Connected");
             connectionMock.SetupGet(c => c.SessionVersion).Returns(1);

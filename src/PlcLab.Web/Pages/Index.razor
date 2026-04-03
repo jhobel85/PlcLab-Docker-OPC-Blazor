@@ -17,6 +17,9 @@
     <li class="nav-item">
       <button type="button" class="nav-link @(activeTab == "plans" ? "active" : "")" @onclick='() => SetTab("plans")'>Test Plans</button>
     </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link @(activeTab == "certs" ? "active" : "")" @onclick='() => SetTab("certs")'>Certificates</button>
+    </li>
 
   </ul>
   <div class="mt-3">
@@ -35,6 +38,10 @@
     else if (activeTab == "plans")
     {
       <TestPlans />
+    }
+    else if (activeTab == "certs")
+    {
+      <CertificatesManager />
     }
   </div>
 </div>
