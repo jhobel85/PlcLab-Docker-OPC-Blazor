@@ -15,7 +15,12 @@ public static class TestPlansApi
                 .Include(tp => tp.TestCases)
                 .ToListAsync();
             return Results.Ok(plans);
-        });
+        })
+        .WithTags("Test Plans")
+        .WithName("GetTestPlans")
+        .WithSummary("Returns all test plans.")
+        .WithDescription("Loads all test plans including their test cases.")
+        .Produces<List<TestPlan>>(StatusCodes.Status200OK);
 
         app.MapPost("/api/testplans", async ([FromServices] PlcLabDbContext db, [FromBody] TestPlan plan) =>
         {
@@ -26,7 +31,12 @@ public static class TestPlansApi
             db.TestPlans.Add(plan);
             await db.SaveChangesAsync();
             return Results.Created($"/api/testplans/{plan.Id}", plan);
-        });
+        })
+        .WithTags("Test Plans")
+        .WithName("CreateTestPlan")
+        .WithSummary("Creates a new test plan.")
+        .WithDescription("Creates a new test plan and assigns identifiers to the plan and its test cases.")
+        .Produces<TestPlan>(StatusCodes.Status201Created);
 
         app.MapGet("/api/testplans/{id:guid}", async ([FromServices] PlcLabDbContext db, Guid id) =>
         {
@@ -34,7 +44,13 @@ public static class TestPlansApi
                 .Include(tp => tp.TestCases)
                 .FirstOrDefaultAsync(tp => tp.Id == id);
             return plan is null ? Results.NotFound() : Results.Ok(plan);
-        });
+        })
+        .WithTags("Test Plans")
+        .WithName("GetTestPlanById")
+        .WithSummary("Returns a single test plan by identifier.")
+        .WithDescription("Loads a test plan and its test cases by plan identifier.")
+        .Produces<TestPlan>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
         app.MapPut("/api/testplans/{id:guid}", async ([FromServices] PlcLabDbContext db, Guid id, [FromBody] TestPlan plan) =>
         {
@@ -67,7 +83,13 @@ public static class TestPlansApi
             // Re-fetch to return the updated plan with all test cases
             var updated = await db.TestPlans.AsNoTracking().Include(tp => tp.TestCases).FirstOrDefaultAsync(tp => tp.Id == id);
             return Results.Ok(updated);
-        });
+        })
+        .WithTags("Test Plans")
+        .WithName("UpdateTestPlan")
+        .WithSummary("Updates an existing test plan.")
+        .WithDescription("Replaces the test cases of an existing plan and increments the plan version.")
+        .Produces<TestPlan>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
         app.MapDelete("/api/testplans/{id:guid}", async ([FromServices] PlcLabDbContext db, Guid id) =>
         {
@@ -76,6 +98,12 @@ public static class TestPlansApi
             db.TestPlans.Remove(plan);
             await db.SaveChangesAsync();
             return Results.NoContent();
-        });
+        })
+        .WithTags("Test Plans")
+        .WithName("DeleteTestPlan")
+        .WithSummary("Deletes a test plan.")
+        .WithDescription("Deletes a test plan and its associated test cases.")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound);
     }
 }

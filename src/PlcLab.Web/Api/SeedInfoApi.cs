@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PlcLab.Infrastructure;
 using PlcLab.Web.Services;
@@ -15,7 +16,7 @@ public static class SeedInfoApi
     {
         app.MapGet("/api/seedinfo", async (
             IConfiguration config,
-            ISeedDataClient seedDataClient,
+            [FromServices] ISeedDataClient seedDataClient,
             CancellationToken cancellationToken) =>
         {
             var seedEnabled = config.GetValue<bool>("Seed:Enabled");
@@ -45,6 +46,13 @@ public static class SeedInfoApi
 
             return Results.Ok(new { seedEnabled = seedInfo.SeedEnabled, variables = seedInfo.Variables, result, debug = "Loaded via SeedDataClient" });
         })
+        .WithTags("Seed")
+        .WithName("GetSeedInfo")
+        .WithSummary("Returns current seed demo values and calculated result.")
+        .WithDescription("Loads demo OPC UA seed values and returns the current variables together with the calculated Add method result.")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
         .RequireAuthorization();
     }
 }

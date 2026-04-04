@@ -12,6 +12,8 @@ using PlcLab.Web.ViewModel;
 using PlcLab.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PlcLab.Application.Ports;
+using Microsoft.OpenApi.Models;
+using PlcLab.Web.OpenApi;
 
 // Configure Serilog before building
 Log.Logger = new LoggerConfiguration()
@@ -32,6 +34,28 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "PlcLab API",
+        Version = "v1",
+        Description = "OpenAPI documentation for PlcLab minimal APIs, including operational health endpoints."
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "JWT Bearer token. Example: 'Bearer eyJ...'.",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.OperationFilter<BearerSecurityOperationFilter>();
+});
 // Add SQL Server DbContext
 // Add PostgreSQL DbContext
 builder.Services.AddDbContext<PlcLabDbContext>(options =>
@@ -115,6 +139,18 @@ builder.Services.AddSingleton<PlcLab.Infrastructure.IFeatureFlags>(sp =>
     new PlcLab.Infrastructure.FeatureFlags(sp.GetRequiredService<IConfiguration>()));
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "PlcLab API v1");
+        options.RoutePrefix = "swagger";
+        options.DocumentTitle = "PlcLab API Docs";
+        options.DisplayRequestDuration();
+    });
+}
+
 // Automatically apply EF Core migrations at startup
 using (var scope = app.Services.CreateScope())
 {
@@ -127,11 +163,33 @@ TestPlansApi.MapTestPlansApi(app);
 TestRunsApi.MapTestRunsApi(app);
 CertificatesApi.MapCertificatesApi(app);
 app.UseHttpsRedirection();
-// app.UseAuthentication();
-// app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseStaticFiles();
 app.UseAntiforgery();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-app.MapHealthChecks("/healthz");
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
+    .WithTags("Health")
+    .WithName("GetHealth")
+    .WithSummary("Returns a lightweight liveness response.")
+    .WithDescription("Simple JSON ping endpoint used for basic service liveness checks.")
+    .Produces(Microsoft.AspNetCore.Http.StatusCodes.Status200OK);
+
+app.MapGet("/healthz", async (
+        [Microsoft.AspNetCore.Mvc.FromServices] Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService healthCheckService,
+        CancellationToken cancellationToken) =>
+    {
+        var report = await healthCheckService.CheckHealthAsync(cancellationToken).ConfigureAwait(false);
+        var statusCode = report.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy
+            ? Microsoft.AspNetCore.Http.StatusCodes.Status503ServiceUnavailable
+            : Microsoft.AspNetCore.Http.StatusCodes.Status200OK;
+
+        return Results.Text(report.Status.ToString(), "text/plain", statusCode: statusCode);
+    })
+    .WithTags("Health")
+    .WithName("GetHealthReadiness")
+    .WithSummary("Returns the ASP.NET Core readiness health status.")
+    .WithDescription("Operational readiness endpoint intended for Docker and Kubernetes health probes.")
+    .Produces<string>(Microsoft.AspNetCore.Http.StatusCodes.Status200OK, "text/plain")
+    .Produces<string>(Microsoft.AspNetCore.Http.StatusCodes.Status503ServiceUnavailable, "text/plain");
 app.Run();

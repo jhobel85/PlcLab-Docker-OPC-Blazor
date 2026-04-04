@@ -21,6 +21,28 @@ dotnet restore
    dotnet run --project src/PlcLab.Web
    ```
 
+## Swagger UI
+
+In development, the app exposes interactive API documentation at:
+
+- `GET /swagger`
+- `GET /swagger/index.html`
+- OpenAPI JSON: `GET /swagger/v1/swagger.json`
+
+Typical local URL:
+
+```text
+http://localhost:8080/swagger
+```
+
+Swagger includes all `/api/*` endpoints plus `/health` and `/healthz`.
+The `SeedInfo` endpoint is marked with JWT bearer security. Use the **Authorize**
+button in Swagger UI and provide a token as:
+
+```text
+Bearer <your-jwt-token>
+```
+
 ## Health Check
 
 The app exposes two health endpoints:
