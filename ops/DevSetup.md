@@ -20,3 +20,21 @@ dotnet restore
    ```bash
    dotnet run --project src/PlcLab.Web
    ```
+
+## Health Check
+
+The app exposes two health endpoints:
+
+| URL | Description |
+|---|---|
+| `GET /health` | Lightweight JSON ping (`{"status":"ok"}`) |
+| `GET /healthz` | ASP.NET Core Health Checks endpoint (returns `Healthy` / `Degraded` / `Unhealthy`) |
+
+Use `/healthz` for Kubernetes readiness/liveness probes and Docker `HEALTHCHECK`.
+The `Dockerfile` already contains:
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD wget -qO- http://localhost:8080/healthz || exit 1
+```
+

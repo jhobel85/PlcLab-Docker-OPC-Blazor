@@ -110,6 +110,9 @@ builder.Services.AddSingleton<IOpcUaSessionFactory>(sp =>
 
 // OpenTelemetry tracing configuration
 builder.Services.AddPlcLabOpenTelemetry(builder.Configuration);
+builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<PlcLab.Infrastructure.IFeatureFlags>(sp =>
+    new PlcLab.Infrastructure.FeatureFlags(sp.GetRequiredService<IConfiguration>()));
 var app = builder.Build();
 
 // Automatically apply EF Core migrations at startup
@@ -130,4 +133,5 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapHealthChecks("/healthz");
 app.Run();

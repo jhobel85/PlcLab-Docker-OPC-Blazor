@@ -28,6 +28,12 @@ public class TestRun
     public int PlanVersion { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
+    /// <summary>Thumbprint of the OPC UA client certificate used for this run.</summary>
+    public string? Thumbprint { get; set; }
+    /// <summary>OPC UA endpoint URL the run connected to.</summary>
+    public string? EndpointUrl { get; set; }
+    /// <summary>Identity token / user name used to authenticate with the OPC UA server.</summary>
+    public string? UserIdentity { get; set; }
     public List<TestResult> Results { get; set; } = new();
 }
 

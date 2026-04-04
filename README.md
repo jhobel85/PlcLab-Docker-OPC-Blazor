@@ -60,11 +60,11 @@ Add the official OPC UA **Reference Server** as a Docker service (port **4840**)
 - [x] Client certificate store + trust list management UI
 - [x] Enforce `AutoAcceptUntrustedCertificates = false` (demo proper TLS)
 - [x] README section on certificate workflow (generate, trust, revoke)
-- [ ] Implement code signing for Docker images and application binaries
+- [x] Implement code signing for Docker images and application binaries
 - [x] Automate certificate generation and renewal (see CertificatesGuide.md)
-- [ ] Integrate signing into CI/CD pipeline
-- [ ] Document signing process in project docs
-- [ ] Add verification steps to deployment scripts
+- [x] Integrate signing into CI/CD pipeline
+- [x] Document signing process in project docs
+- [x] Add verification steps to deployment scripts
 > **Note:** Login/authentication is currently disabled for development/testing. Re-enable before production deployment.
 
 ### Certificate workflow (generate, trust, revoke)
@@ -119,11 +119,11 @@ Typical trust flow:
 - [x] Stable pass/fail scenarios for automated validation
 
 ## 11) Documentation
-- [ ] README: overview, architecture diagram, screenshots/GIFs
-- [ ] Quickstart for virtual PLC in Docker; endpoint configuration
-- [ ] Quickstart for in-process mock OPC UA server (start flag + expected nodes/methods)
-- [ ] Security notes (certs, TLS, trust lists)
-- [ ] Roadmap & known limitations
+- [x] README: overview, architecture diagram, screenshots/GIFs
+- [x] Quickstart for virtual PLC in Docker; endpoint configuration
+- [x] Quickstart for in-process mock OPC UA server (start flag + expected nodes/methods)
+- [x] Security notes (certs, TLS, trust lists)
+- [x] Roadmap & known limitations
 
 ---
 
@@ -135,12 +135,12 @@ Typical trust flow:
 - [ ] M5 (optional): In‑process mock server + extra UI polish
 
 ## Nice-to-haves
-- [ ] Health check and readiness probe (if using k8s later)
-- [ ] Audit fields: certificate thumbprint, endpoint URL, user identity
+- [x] Health check and readiness probe (`/healthz` + Docker `HEALTHCHECK`)
+- [x] Audit fields: certificate thumbprint, endpoint URL, user identity
 - [ ] Global Discovery Server integration
-- [ ] Feature flags for experimental UI
+- [x] Feature flags for experimental UI (`IFeatureFlags` + config-backed impl)
 - [ ] Localization (CS/EN) and time zone handling
-- [ ] Blazor UI - dark mode + responsive layout (MudBlazor or Bootstrap)
+- [x] Blazor UI - dark mode + responsive layout (CSS `prefers-color-scheme`)
 
 
 ---
@@ -166,3 +166,203 @@ Quick links:
 - [DeployToK8s.md](ops/DeployToK8s.md)
 - [Rollback.md](ops/Rollback.md)
 - [MockOpcUaServer.md](ops/MockOpcUaServer.md) — In-process mock OPC UA server for testing
+
+---
+
+## Architecture
+
+```mermaid
+graph TD
+    Browser["Browser"] --> Web["PlcLab.Web\n(Blazor SSR + Interactive)"]
+    Web --> App["PlcLab.Application\n(CQRS + Orchestrator)"]
+    App --> OPC["PlcLab.OPC\n(OPC UA Client)"]
+    App --> Infra["PlcLab.Infrastructure\n(EF Core + Serilog + OTEL)"]
+    OPC --> RefServer["OPC UA Reference Server\nopc.tcp://opcua-refserver:4840"]
+    OPC --> MockServer["In-Process Mock Server\nopc.tcp://localhost:4841"]
+    Infra --> DB[("PostgreSQL")]
+    Web --> Domain["PlcLab.Domain\n(Entities + Domain Events)"]
+    App --> Domain
+```
+
+**Project responsibilities:**
+
+| Project | Responsibility |
+|---|---|
+| `PlcLab.Web` | Blazor UI pages and API endpoints |
+| `PlcLab.Application` | CQRS handlers, test-run orchestrator |
+| `PlcLab.OPC` | OPC UA session, browse, read/write, subscriptions, methods |
+| `PlcLab.Domain` | Entities (`TestPlan`, `TestRun`, etc.), domain events, validators |
+| `PlcLab.Infrastructure` | EF Core DbContext, Serilog, OpenTelemetry, seeder, mock server hosting |
+
+---
+
+## Quickstart — Virtual PLC (Docker)
+
+> Uses the official **OPC Foundation UA Reference Server** container as a virtual PLC.
+
+**Prerequisites:** Docker Desktop (or compatible engine)
+
+```bash
+# Clone and start all services (Reference Server + Web App)
+git clone https://github.com/jhobel85/PlcLab-Docker-OPC-Blazor.git
+cd PlcLab-Docker-OPC-Blazor
+docker compose up -d
+
+# Open the app
+open http://localhost:8080
+# or on Windows:
+start http://localhost:8080
+```
+
+The `docker-compose.yml` starts:
+
+| Service | URL | Description |
+|---|---|---|
+| `plclab-web` | http://localhost:8080 | Blazor web app |
+| `opcua-refserver` | opc.tcp://localhost:4840 | Virtual OPC UA PLC (Reference Server) |
+
+**Endpoint configuration** (already set in `appsettings.json`):
+
+```json
+{
+  "OpcUa": {
+    "Endpoint": "opc.tcp://opcua-refserver:4840"
+  }
+}
+```
+
+Override at runtime:
+
+```bash
+docker compose run -e OpcUa__Endpoint=opc.tcp://my-plc:4840 plclab-web
+```
+
+---
+
+## Quickstart — In-Process Mock OPC UA Server
+
+> Starts a lightweight OPC UA server inside the same process. No Docker sidecar needed.
+> Ideal for offline development and unit-like integration tests.
+
+Enable the mock server via configuration:
+
+```json
+{
+  "MockOpcUa": {
+    "Enabled": true,
+    "BaseAddress": "opc.tcp://localhost:4841"
+  }
+}
+```
+
+Or via environment variable:
+
+```bash
+MockOpcUa__Enabled=true MockOpcUa__BaseAddress=opc.tcp://localhost:4841 dotnet run --project src/PlcLab.Web
+```
+
+Then point the endpoint switcher in the UI to `opc.tcp://localhost:4841`, or set:
+
+```json
+{ "OpcUa": { "Endpoint": "opc.tcp://localhost:4841" } }
+```
+
+**Available nodes**
+
+| Node path | Type | Description |
+|---|---|---|
+| `Process/State` | `Int32` | Simulated process state (cycles 0–3) |
+| `Analog/Flow` | `Double` | Simulated flow value (sine wave) |
+| `Digital/ValveOpen` | `Boolean` | Toggles periodically |
+
+**Available methods** (`Demo/` folder)
+
+| Method | Inputs | Returns |
+|---|---|---|
+| `Add` | `a: Double`, `b: Double` | `sum: Double` |
+| `ResetAlarms` | _(none)_ | _(none)_ |
+
+See [ops/MockOpcUaServer.md](ops/MockOpcUaServer.md) for full details.
+
+---
+
+## Security
+
+### Certificate Workflow
+
+OPC UA uses X.509 certificates for mutual TLS. The client PKI store lives under
+`pki/` (or `/app/pki` in the container):
+
+| Folder | Contents |
+|---|---|
+| `pki/own` | Client certificate and private key |
+| `pki/trusted` | Server certificates trusted by the client |
+| `pki/rejected` | Certificates seen but not yet trusted |
+
+**Typical trust flow:**
+
+1. Generate or rotate the client certificate:
+   ```powershell
+   pwsh ./scripts/Rotate-OpcUaClientCertificate.ps1 -PkiRoot ./pki -Force
+   ```
+2. Connect to the OPC UA endpoint. If the server certificate is unknown it
+   appears in **Rejected**.
+3. Open the **Certificates** tab in the UI; review the thumbprint and subject
+   out-of-band.
+4. Click **Promote** to move it to **Trusted**.
+5. If a certificate is compromised or obsolete, click **Reject** and then
+   **Delete** to remove it.
+
+### TLS Policy
+
+`AutoAcceptUntrustedCertificates` is set to **`false`** in all profiles. This
+enforces proper certificate validation. Never set it to `true` outside of
+isolated development environments.
+
+### Code Signing
+
+All published Docker images are signed via [Sigstore/cosign](https://docs.sigstore.dev/)
+using **keyless OIDC signing** tied to the GitHub Actions identity. Verify before
+deploying:
+
+```bash
+cosign verify \
+  --certificate-identity-regexp "https://github.com/jhobel85/PlcLab-Docker-OPC-Blazor/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/jhobel85/plclab-docker-opc-blazor@sha256:<digest>
+```
+
+See [ops/SigningGuide.md](ops/SigningGuide.md) for key rotation and binary signing details.
+
+### Authentication
+
+> Login / authentication is currently **disabled** for development and testing.
+> Re-enable the `UseAuthentication` / `UseAuthorization` middleware and configure
+> a real identity provider before any production deployment.
+
+---
+
+## Roadmap & Known Limitations
+
+### Roadmap (nice-to-haves)
+
+- [ ] **M5:** In-process mock server UI polish and full test coverage
+- [x] Health check endpoint (`/healthz`) and Docker readiness probe
+- [x] Audit fields (`Thumbprint`, `EndpointUrl`, `UserIdentity`) on TestRun
+- [x] Feature flags (`IFeatureFlags`) for experimental UI features
+- [x] Dark mode and responsive layout (CSS `prefers-color-scheme`)
+- [ ] Global Discovery Server (GDS) integration
+- [ ] Localization (CS / EN) and time-zone handling
+- [ ] Allure report publishing automation
+
+### Known Limitations
+
+| Area | Limitation |
+|---|---|
+| Authentication | Disabled; must be re-enabled for production |
+| GDS | Not integrated; trust-list management is manual |
+| Persistence | PostgreSQL required even for demo; SQLite option not yet wired |
+| Mock server | Hosted service registration commented out to avoid CI port conflicts |
+| Migrations | Run automatically at startup; not suitable for zero-downtime deployments |
+| OPC UA security | `None` and `Basic256Sha256` policies tested; other policies not validated |
+
