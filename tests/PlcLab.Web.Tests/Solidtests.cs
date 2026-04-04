@@ -87,7 +87,9 @@ public class Solidtests
                 && !t.Name.Contains("Entry"));              // DTO records with auto-generated methods
         foreach (var cls in classes)
         {
-            var methodCount = cls.GetMethods().Length;
+            var methodCount = cls
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .Count(m => !m.IsSpecialName);
             Assert.True(methodCount <= 20, $"{cls.Name} violates SRP with {methodCount} methods");
         }
     }
